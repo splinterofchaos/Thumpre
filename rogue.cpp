@@ -49,7 +49,7 @@ bool walk( Actor* a, Vec dir )
     Vec newPos = a->pos + dir;
 
     bool inBounds = newPos.x > 0 and newPos.y > 0;
-    inBounds = inBounds and newPos.y < map.size() and newPos.x < map[newPos.y].size();
+    inBounds &= newPos.y < map.size() and newPos.x < map[newPos.y].size();
 
     if( inBounds and map[newPos.y][newPos.x] != '#' )
     {
@@ -81,10 +81,15 @@ int main( int argc, char** argv )
 
     Actor player( 0, 0 );
 
+    // (0,0) is an illegal position. If the player has an x, y is implied as
+    // both are set at once. Loop until x (and implicitly, y) is set.
     for( int y=1; not player.pos.x and y<map.size(); y++ )
         for( int x=1; not player.pos.x and x<map[y].size(); x++ )
             if( map[y][x] != '#' )
                 player.pos = { x, y };
+
+    if( not player.pos.x )
+        return 2;
 
     Vec messagePos;
     messagePos.x = 3;
@@ -102,15 +107,21 @@ int main( int argc, char** argv )
         mvprintw( messagePos.y, messagePos.x, lastMessage.c_str() );
         refresh(); 
 
+        lastMessage = "";
+
         Vec inputDir = { 0, 0 }; // The direction the user wants to move, if any.
 
         int key = getch();
         switch( key )
         {
-          case 'l': case KEY_RIGHT: inputDir = Vec(  1,  0 ); break;
-          case 'h': case KEY_LEFT:  inputDir = Vec( -1,  0 ); break;
-          case 'k': case KEY_UP:    inputDir = Vec(  0, -1 ); break;
-          case 'j': case KEY_DOWN:  inputDir = Vec(  0,  1 ); break;
+          case 'l': case KEY_RIGHT: case '6': inputDir = Vec(  1,  0 ); break;
+          case 'h': case KEY_LEFT:  case '4': inputDir = Vec( -1,  0 ); break;
+          case 'k': case KEY_UP:    case '8': inputDir = Vec(  0, -1 ); break;
+          case 'j': case KEY_DOWN:  case '2': inputDir = Vec(  0,  1 ); break;
+          case 'y': case '7': inputDir = Vec( -1, -1 ); break;
+          case 'u': case '9': inputDir = Vec(  1, -1 ); break;
+          case 'b': case '1': inputDir = Vec( -1,  1 ); break;
+          case 'n': case '3': inputDir = Vec(  1,  1 ); break;
 
           case 'c': lastMessage = "..."; break;
           case 'q': quit = true; break;

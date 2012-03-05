@@ -9,7 +9,7 @@ all : rogue mapgen
 
 compile = ${CXX} ${CFLAGS}
 
-rogue : rogue.cpp
+rogue : rogue.cpp mapgen
 	${compile} rogue.cpp -o rogue ${LDFLAGS}
 
 mapgen : mapgen.cpp
