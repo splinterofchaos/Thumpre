@@ -19,6 +19,8 @@ bool equal( const char* const a, const char* const b )
 struct Vec
 {
     int x, y;
+
+    Vec() {}
     Vec( int x, int y ) : x(x), y(y) {}
 };
 
@@ -66,12 +68,27 @@ int main( int argc, char** argv )
     refresh();
     keypad(stdscr, TRUE);
 
-    map.push_back( "####" );
-    map.push_back( "#..#" );
-    map.push_back( "#..#" );
-    map.push_back( "####" );
+    { // Read in the map from mapgen, the generic map generator.
+        FILE* mapgen = popen( "./mapgen 20x20", "r" ); 
+        if( not mapgen )
+            return 1;
 
-    Actor player( 1, 1 );
+        char row[ 200 ];
+        while( fscanf(mapgen, "%s", row) != EOF )
+            map.push_back( row );
+        pclose( mapgen );
+    }
+
+    Actor player( 0, 0 );
+
+    for( int y=1; not player.pos.x and y<map.size(); y++ )
+        for( int x=1; not player.pos.x and x<map[y].size(); x++ )
+            if( map[y][x] != '#' )
+                player.pos = { x, y };
+
+    Vec messagePos;
+    messagePos.x = 3;
+    messagePos.y = map.size() + 3;
 
     bool quit = false;
     while( not quit )
@@ -82,7 +99,7 @@ int main( int argc, char** argv )
         for( unsigned int row=0; row < map.size(); row++ )
             mvprintw( row, 0, map[row].c_str() );
         mvaddch( player.pos.y, player.pos.x, '@' );
-        mvprintw( 10, 5, lastMessage.c_str() );
+        mvprintw( messagePos.y, messagePos.x, lastMessage.c_str() );
         refresh(); 
 
         Vec inputDir = { 0, 0 }; // The direction the user wants to move, if any.
