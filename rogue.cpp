@@ -5,16 +5,9 @@
 
 #include <vector>
 #include <string>
+#include <algorithm>
 
 #include <ncurses.h>
-
-typedef std::vector< std::string > Map;
-Map map;
-
-bool equal( const char* const a, const char* const b )
-{
-    return strcmp( a, b ) == 0;
-}
 
 struct Vec
 {
@@ -38,12 +31,14 @@ struct Item
 {
     enum Material
     {
-        WOOD
+        WOOD,
+        HAIR
     };
 
     enum Type
     {
-        ROD
+        ROD,
+        WIG
     };
 
     Vec pos;
@@ -58,10 +53,27 @@ struct Item
     }
 };
 
+typedef std::vector< std::string > Map;
+Map map;
+typedef std::vector< Item > Inventory;
+Inventory items;
+
+void transfer( Inventory* to, Inventory* from, Inventory::iterator what )
+{
+    to->push_back( *what );
+    from->erase( what );
+}
+
+Inventory::iterator item_at( Vec pos )
+{
+    return std::find_if ( 
+        items.begin(), items.end(), [&](const Item& i) { return i.pos == pos; }
+    );
+}
+
 struct Actor
 {
     typedef std::vector< Item > Inventory;
-    typedef Inventory::iterator InvIt;
 
     Vec pos;
     Inventory inventory;
@@ -102,7 +114,7 @@ int main( int argc, char** argv )
     keypad(stdscr, TRUE);
 
     { // Read in the map from mapgen, the generic map generator.
-        FILE* mapgen = popen( "./mapgen 20x20", "r" ); 
+        FILE* mapgen = popen( "./mapgen 20x15", "r" ); 
         if( not mapgen )
             return 1;
 
@@ -121,7 +133,8 @@ int main( int argc, char** argv )
             if( map[y][x] != '#' )
                 player.pos = { x, y };
 
-    Item broomHandle( player.pos, "Broom Handle", '/', Item::WOOD, Item::ROD );
+    items.push_back( Item(player.pos, "Broom Handle", '/', Item::WOOD, Item::ROD) );
+    items.push_back( Item(player.pos+Vec(1,0), "Horse Hair", '"', Item::HAIR, Item::WIG) );
 
     if( not player.pos.x )
         return 2;
@@ -137,9 +150,11 @@ int main( int argc, char** argv )
 
         erase();
         
-        if( player.pos == broomHandle.pos )
+        Inventory::iterator itemHere = item_at( player.pos );
+
+        if( itemHere != items.end() )
         {
-            const std::string what = "Your foot hits a " + broomHandle.name + ".";
+            const std::string what = "Your foot hits a " + itemHere->name + ".";
             if( lastMessage != "" )
                 lastMessage = lastMessage + "; " + what;
             else
@@ -148,7 +163,8 @@ int main( int argc, char** argv )
 
         for( unsigned int row=0; row < map.size(); row++ )
             mvprintw( row, 0, map[row].c_str() );
-        mvaddch( broomHandle.pos.y, broomHandle.pos.x, broomHandle.image );
+        for( unsigned int i = 0; i < items.size(); i++ )
+            mvaddch( items[i].pos.y, items[i].pos.x, items[i].image );
         mvaddch( player.pos.y, player.pos.x, '@' );
         mvprintw( messagePos.y, messagePos.x, lastMessage.c_str() );
 
@@ -178,14 +194,12 @@ int main( int argc, char** argv )
           case 'b': case '1': inputDir = Vec( -1,  1 ); break;
           case 'n': case '3': inputDir = Vec(  1,  1 ); break;
 
-          case 'p': case 'g': if( broomHandle.pos == player.pos )
+          case 'p': case 'g': if( itemHere != items.end() )
                               {
-                                  player.inventory.push_back( broomHandle );
-
-                                  // Just take yourself off the map.
-                                  // TODO: There may be... better, much better solutions.
-                                  broomHandle.pos = Vec( -1, -1 );
+                                  transfer( &player.inventory, &items, itemHere );
+                                  lastMessage = "Got " + player.inventory.back().name + ".";
                               }
+                              break;
 
           case 'c': lastMessage = "..."; break;
           case 'q': quit = true; break;
