@@ -24,14 +24,47 @@ struct Vec
     Vec( int x, int y ) : x(x), y(y) {}
 };
 
+bool operator == ( const Vec& a, const Vec& b )
+{
+    return a.x == b.x and a.y == b.y;
+}
+
 Vec operator + ( const Vec& a, const Vec& b )
 {
     return { a.x + b.x, a.y + b.y };
 }
 
+struct Item
+{
+    enum Material
+    {
+        WOOD
+    };
+
+    enum Type
+    {
+        ROD
+    };
+
+    Vec pos;
+    std::string name;
+    char     image;
+    Material material;
+    Type     type;
+
+    Item( Vec pos, const std::string& name, char image, Material material, Type type )
+        : pos(pos), name(name), image(image), material(material), type(type)
+    {
+    }
+};
+
 struct Actor
 {
+    typedef std::vector< Item > Inventory;
+    typedef Inventory::iterator InvIt;
+
     Vec pos;
+    Inventory inventory;
 
     Actor( int x, int y )
         : pos( x, y )
@@ -88,6 +121,8 @@ int main( int argc, char** argv )
             if( map[y][x] != '#' )
                 player.pos = { x, y };
 
+    Item broomHandle( player.pos, "Broom Handle", '/', Item::WOOD, Item::ROD );
+
     if( not player.pos.x )
         return 2;
 
@@ -101,10 +136,30 @@ int main( int argc, char** argv )
         static std::string lastMessage = "Hello";
 
         erase();
+        
+        if( player.pos == broomHandle.pos )
+        {
+            const std::string what = "Your foot hits a " + broomHandle.name + ".";
+            if( lastMessage != "" )
+                lastMessage = lastMessage + "; " + what;
+            else
+                lastMessage = what;
+        }
+
         for( unsigned int row=0; row < map.size(); row++ )
             mvprintw( row, 0, map[row].c_str() );
+        mvaddch( broomHandle.pos.y, broomHandle.pos.x, broomHandle.image );
         mvaddch( player.pos.y, player.pos.x, '@' );
         mvprintw( messagePos.y, messagePos.x, lastMessage.c_str() );
+
+        // Print the inventory.
+        mvprintw( messagePos.y + 3, 4, "You have:" );
+        if( player.inventory.size() )
+            for( int i = 0; i < player.inventory.size(); i++ )
+                mvprintw( messagePos.y + 4+i, 6, player.inventory[i].name.c_str() );
+        else
+            mvprintw( messagePos.y + 4, 6, "Nothing." );
+
         refresh(); 
 
         lastMessage = "";
@@ -123,6 +178,15 @@ int main( int argc, char** argv )
           case 'b': case '1': inputDir = Vec( -1,  1 ); break;
           case 'n': case '3': inputDir = Vec(  1,  1 ); break;
 
+          case 'p': case 'g': if( broomHandle.pos == player.pos )
+                              {
+                                  player.inventory.push_back( broomHandle );
+
+                                  // Just take yourself off the map.
+                                  // TODO: There may be... better, much better solutions.
+                                  broomHandle.pos = Vec( -1, -1 );
+                              }
+
           case 'c': lastMessage = "..."; break;
           case 'q': quit = true; break;
           default: lastMessage = "Is that key supposed to do something?"; break;
@@ -132,6 +196,9 @@ int main( int argc, char** argv )
             if( not walk(&player, inputDir) )
                 lastMessage = "Cannot move there.";
     }
+
+
+    endwin();
 
     return 0;
 }
