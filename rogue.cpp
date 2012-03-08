@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <string>
+#include <algorithm>
 
 #include <ncurses.h>
 
@@ -33,16 +34,16 @@ struct Actor
 {
     Vec pos;
 
-    Actor( int x, int y )
-        : pos( x, y )
-    {
-    }
+    char image;
 
-    Actor( Vec pos )
-        : pos( pos )
+    Actor( Vec pos, char image )
+        : pos( pos ), image(image)
     {
     }
 };
+
+typedef std::vector< Actor > ActorList;
+ActorList actors;
 
 bool walk( Actor* a, Vec dir )
 {
@@ -79,16 +80,20 @@ int main( int argc, char** argv )
         pclose( mapgen );
     }
 
-    Actor player( 0, 0 );
+    actors.push_back( Actor(Vec(0,0), '@') );
+    Actor* player = &actors[0];
 
     // (0,0) is an illegal position. If the player has an x, y is implied as
     // both are set at once. Loop until x (and implicitly, y) is set.
-    for( int y=1; not player.pos.x and y<map.size(); y++ )
-        for( int x=1; not player.pos.x and x<map[y].size(); x++ )
+    for( int y=1; not player->pos.x and y<map.size(); y++ )
+        for( int x=1; not player->pos.x and x<map[y].size(); x++ )
             if( map[y][x] != '#' )
-                player.pos = { x, y };
+                player->pos = { x, y };
 
-    if( not player.pos.x )
+    actors.push_back( Actor(player->pos+Vec(0,3), 'k') );
+    player = &actors[0];
+
+    if( not player->pos.x )
         return 2;
 
     Vec messagePos;
@@ -103,7 +108,10 @@ int main( int argc, char** argv )
         erase();
         for( unsigned int row=0; row < map.size(); row++ )
             mvprintw( row, 0, map[row].c_str() );
-        mvaddch( player.pos.y, player.pos.x, '@' );
+        std::for_each ( 
+            actors.begin(), actors.end(), 
+            [](const Actor& a) { mvaddch( a.pos.y, a.pos.x, a.image ); }
+        );
         mvprintw( messagePos.y, messagePos.x, lastMessage.c_str() );
         refresh(); 
 
@@ -129,7 +137,7 @@ int main( int argc, char** argv )
         }
 
         if( inputDir.x or inputDir.y )
-            if( not walk(&player, inputDir) )
+            if( not walk(player, inputDir) )
                 lastMessage = "Cannot move there.";
     }
 
