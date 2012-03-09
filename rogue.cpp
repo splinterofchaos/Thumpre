@@ -54,8 +54,8 @@ struct Item
 };
 
 typedef std::vector< std::string > Map;
-Map map;
 typedef std::vector< Item > Inventory;
+Map map;
 Inventory items;
 
 void transfer( Inventory* to, Inventory* from, Inventory::iterator what )
@@ -73,8 +73,6 @@ Inventory::iterator item_at( Vec pos )
 
 struct Actor
 {
-    typedef std::vector< Item > Inventory;
-
     Vec pos;
     Inventory inventory;
 
@@ -165,24 +163,27 @@ int main( int argc, char** argv )
                 lastMessage = what;
         }
 
-        for( unsigned int row=0; row < map.size(); row++ )
-            mvprintw( row, 0, map[row].c_str() );
+        #define RNG( container ) container.begin(), container.end()
+        #define FOR_EACH( container, value, block ) \
+            std::for_each( RNG(container), [&]( const value ){ block; } )
 
-        for( unsigned int i = 0; i < items.size(); i++ )
-            mvaddch( items[i].pos.y, items[i].pos.x, items[i].image );
-
-        std::for_each ( 
-            actors.begin(), actors.end(), 
-            [](const Actor& a) { mvaddch( a.pos.y, a.pos.x, a.image ); }
-        );
+        unsigned int row = 0;
+        FOR_EACH( map,    std::string& line, mvprintw(row++, 0, line.c_str()) );
+        FOR_EACH( items,  Item& i,  mvaddch(i.pos.y, i.pos.x, i.image ) );
+        FOR_EACH( actors, Actor& a, mvaddch(a.pos.y, a.pos.x, a.image) );
 
         mvprintw( messagePos.y, messagePos.x, lastMessage.c_str() );
 
         // Print the inventory.
         mvprintw( messagePos.y + 3, 4, "You have:" );
         if( player->inventory.size() )
-            for( int i = 0; i < player->inventory.size(); i++ )
-                mvprintw( messagePos.y + 4+i, 6, player->inventory[i].name.c_str() );
+        {
+            unsigned int y = 0;
+            FOR_EACH ( 
+                player->inventory, Item& i, 
+                mvprintw( messagePos.y + 4 + y++, 6, i.name.c_str() ) 
+            );
+        }
         else
             mvprintw( messagePos.y + 4, 6, "Nothing." );
 
@@ -195,10 +196,10 @@ int main( int argc, char** argv )
         int key = getch();
         switch( key )
         {
-          case 'l': case KEY_RIGHT: case '6': inputDir = Vec(  1,  0 ); break;
-          case 'h': case KEY_LEFT:  case '4': inputDir = Vec( -1,  0 ); break;
-          case 'k': case KEY_UP:    case '8': inputDir = Vec(  0, -1 ); break;
-          case 'j': case KEY_DOWN:  case '2': inputDir = Vec(  0,  1 ); break;
+          case 'l': case '6': case KEY_RIGHT: inputDir = Vec(  1,  0 ); break;
+          case 'h': case '4': case KEY_LEFT:  inputDir = Vec( -1,  0 ); break;
+          case 'k': case '8': case KEY_UP:    inputDir = Vec(  0, -1 ); break;
+          case 'j': case '2': case KEY_DOWN:  inputDir = Vec(  0,  1 ); break;
           case 'y': case '7': inputDir = Vec( -1, -1 ); break;
           case 'u': case '9': inputDir = Vec(  1, -1 ); break;
           case 'b': case '1': inputDir = Vec( -1,  1 ); break;
