@@ -9,14 +9,6 @@
 
 #include <ncurses.h>
 
-typedef std::vector< std::string > Map;
-Map map;
-
-bool equal( const char* const a, const char* const b )
-{
-    return strcmp( a, b ) == 0;
-}
-
 struct Vec
 {
     int x, y;
@@ -25,14 +17,66 @@ struct Vec
     Vec( int x, int y ) : x(x), y(y) {}
 };
 
+bool operator == ( const Vec& a, const Vec& b )
+{
+    return a.x == b.x and a.y == b.y;
+}
+
 Vec operator + ( const Vec& a, const Vec& b )
 {
     return { a.x + b.x, a.y + b.y };
 }
 
+struct Item
+{
+    enum Material
+    {
+        WOOD,
+        HAIR
+    };
+
+    enum Type
+    {
+        ROD,
+        WIG
+    };
+
+    Vec pos;
+    std::string name;
+    char     image;
+    Material material;
+    Type     type;
+
+    Item( Vec pos, const std::string& name, char image, Material material, Type type )
+        : pos(pos), name(name), image(image), material(material), type(type)
+    {
+    }
+};
+
+typedef std::vector< std::string > Map;
+Map map;
+typedef std::vector< Item > Inventory;
+Inventory items;
+
+void transfer( Inventory* to, Inventory* from, Inventory::iterator what )
+{
+    to->push_back( *what );
+    from->erase( what );
+}
+
+Inventory::iterator item_at( Vec pos )
+{
+    return std::find_if ( 
+        items.begin(), items.end(), [&](const Item& i) { return i.pos == pos; }
+    );
+}
+
 struct Actor
 {
+    typedef std::vector< Item > Inventory;
+
     Vec pos;
+    Inventory inventory;
 
     char image;
 
@@ -70,7 +114,7 @@ int main( int argc, char** argv )
     keypad(stdscr, TRUE);
 
     { // Read in the map from mapgen, the generic map generator.
-        FILE* mapgen = popen( "./mapgen 20x20", "r" ); 
+        FILE* mapgen = popen( "./mapgen 20x15", "r" ); 
         if( not mapgen )
             return 1;
 
@@ -93,6 +137,9 @@ int main( int argc, char** argv )
     actors.push_back( Actor(player->pos+Vec(0,3), 'k') );
     player = &actors[0];
 
+    items.push_back( Item(player->pos, "Broom Handle", '/', Item::WOOD, Item::ROD) );
+    items.push_back( Item(player->pos+Vec(1,0), "Horse Hair", '"', Item::HAIR, Item::WIG) );
+
     if( not player->pos.x )
         return 2;
 
@@ -106,13 +153,39 @@ int main( int argc, char** argv )
         static std::string lastMessage = "Hello";
 
         erase();
+        
+        Inventory::iterator itemHere = item_at( player->pos );
+
+        if( itemHere != items.end() )
+        {
+            const std::string what = "Your foot hits a " + itemHere->name + ".";
+            if( lastMessage != "" )
+                lastMessage = lastMessage + "; " + what;
+            else
+                lastMessage = what;
+        }
+
         for( unsigned int row=0; row < map.size(); row++ )
             mvprintw( row, 0, map[row].c_str() );
+
+        for( unsigned int i = 0; i < items.size(); i++ )
+            mvaddch( items[i].pos.y, items[i].pos.x, items[i].image );
+
         std::for_each ( 
             actors.begin(), actors.end(), 
             [](const Actor& a) { mvaddch( a.pos.y, a.pos.x, a.image ); }
         );
+
         mvprintw( messagePos.y, messagePos.x, lastMessage.c_str() );
+
+        // Print the inventory.
+        mvprintw( messagePos.y + 3, 4, "You have:" );
+        if( player->inventory.size() )
+            for( int i = 0; i < player->inventory.size(); i++ )
+                mvprintw( messagePos.y + 4+i, 6, player->inventory[i].name.c_str() );
+        else
+            mvprintw( messagePos.y + 4, 6, "Nothing." );
+
         refresh(); 
 
         lastMessage = "";
@@ -131,6 +204,13 @@ int main( int argc, char** argv )
           case 'b': case '1': inputDir = Vec( -1,  1 ); break;
           case 'n': case '3': inputDir = Vec(  1,  1 ); break;
 
+          case 'p': case 'g': if( itemHere != items.end() )
+                              {
+                                  transfer( &player->inventory, &items, itemHere );
+                                  lastMessage = "Got " + player->inventory.back().name + ".";
+                              }
+                              break;
+
           case 'c': lastMessage = "..."; break;
           case 'q': quit = true; break;
           default: lastMessage = "Is that key supposed to do something?"; break;
@@ -140,6 +220,9 @@ int main( int argc, char** argv )
             if( not walk(player, inputDir) )
                 lastMessage = "Cannot move there.";
     }
+
+
+    endwin();
 
     return 0;
 }
