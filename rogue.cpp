@@ -82,6 +82,49 @@ struct Actor
         : pos( pos ), image(image)
     {
     }
+
+    virtual void move();
+};
+
+struct Player : public Actor
+{
+    void move()
+    {
+        Vec inputDir = { 0, 0 }; // The direction the user wants to move, if any.
+
+        int key = getch();
+        switch( key )
+        {
+          case 'l': case '6': case KEY_RIGHT: inputDir = Vec(  1,  0 ); break;
+          case 'h': case '4': case KEY_LEFT:  inputDir = Vec( -1,  0 ); break;
+          case 'k': case '8': case KEY_UP:    inputDir = Vec(  0, -1 ); break;
+          case 'j': case '2': case KEY_DOWN:  inputDir = Vec(  0,  1 ); break;
+          case 'y': case '7': inputDir = Vec( -1, -1 ); break;
+          case 'u': case '9': inputDir = Vec(  1, -1 ); break;
+          case 'b': case '1': inputDir = Vec( -1,  1 ); break;
+          case 'n': case '3': inputDir = Vec(  1,  1 ); break;
+
+          case 'p': case 'g': 
+            Inventory::iterator itemHere = item_at( pos );
+            if( itemHere != items.end() )
+            {
+                transfer( inventory, &items, itemHere );
+                lastMessage = "Got " + inventory.back().name + ".";
+            }
+            else
+                lastMessage = "There's nothing here.";
+
+            break;
+
+          case 'c': lastMessage = "..."; break;
+          case 'q': quit = true; break;
+          default: lastMessage = "Is that key supposed to do something?"; break;
+        }
+
+        if( inputDir.x or inputDir.y )
+            if( not walk(player, inputDir) )
+                lastMessage = "Cannot move there.";
+    }
 };
 
 typedef std::vector< Actor > ActorList;
@@ -191,35 +234,6 @@ int main( int argc, char** argv )
 
         lastMessage = "";
 
-        Vec inputDir = { 0, 0 }; // The direction the user wants to move, if any.
-
-        int key = getch();
-        switch( key )
-        {
-          case 'l': case '6': case KEY_RIGHT: inputDir = Vec(  1,  0 ); break;
-          case 'h': case '4': case KEY_LEFT:  inputDir = Vec( -1,  0 ); break;
-          case 'k': case '8': case KEY_UP:    inputDir = Vec(  0, -1 ); break;
-          case 'j': case '2': case KEY_DOWN:  inputDir = Vec(  0,  1 ); break;
-          case 'y': case '7': inputDir = Vec( -1, -1 ); break;
-          case 'u': case '9': inputDir = Vec(  1, -1 ); break;
-          case 'b': case '1': inputDir = Vec( -1,  1 ); break;
-          case 'n': case '3': inputDir = Vec(  1,  1 ); break;
-
-          case 'p': case 'g': if( itemHere != items.end() )
-                              {
-                                  transfer( &player->inventory, &items, itemHere );
-                                  lastMessage = "Got " + player->inventory.back().name + ".";
-                              }
-                              break;
-
-          case 'c': lastMessage = "..."; break;
-          case 'q': quit = true; break;
-          default: lastMessage = "Is that key supposed to do something?"; break;
-        }
-
-        if( inputDir.x or inputDir.y )
-            if( not walk(player, inputDir) )
-                lastMessage = "Cannot move there.";
     }
 
 
