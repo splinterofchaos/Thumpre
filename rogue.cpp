@@ -72,7 +72,7 @@ struct Actor
     {
     }
 
-    virtual void move();
+    virtual void move() = 0;
 };
 
 // TODO: When the code gets better organized, 
@@ -144,8 +144,8 @@ struct Npc : public Actor
     }
 };
 
-typedef std::vector< Actor > ActorList;
-ActorList actors;
+typedef std::vector< Npc > NpcList;
+NpcList npcs;
 
 void transfer( Inventory* to, Inventory* from, Inventory::iterator what )
 {
@@ -195,23 +195,21 @@ int main( int argc, char** argv )
         pclose( mapgen );
     }
 
-    actors.push_back( Player(Vec(0,0)) );
-    Actor* player = &actors[0];
+    Player player( Vec(0,0) );
 
     // (0,0) is an illegal position. If the player has an x, y is implied as
     // both are set at once. Loop until x (and implicitly, y) is set.
-    for( int y=1; not player->pos.x and y<map.size(); y++ )
-        for( int x=1; not player->pos.x and x<map[y].size(); x++ )
+    for( int y=1; not player.pos.x and y<map.size(); y++ )
+        for( int x=1; not player.pos.x and x<map[y].size(); x++ )
             if( map[y][x] != '#' )
-                player->pos = { x, y };
+                player.pos = { x, y };
 
-    actors.push_back( Npc(player->pos+Vec(0,3), 'k') );
-    player = &actors[0];
+    npcs.push_back( Npc(player.pos+Vec(0,3), 'k') );
 
-    items.push_back( Item(player->pos, "Broom Handle", '/', Item::WOOD, Item::ROD) );
-    items.push_back( Item(player->pos+Vec(1,0), "Horse Hair", '"', Item::HAIR, Item::WIG) );
+    items.push_back( Item(player.pos, "Broom Handle", '/', Item::WOOD, Item::ROD) );
+    items.push_back( Item(player.pos+Vec(1,0), "Horse Hair", '"', Item::HAIR, Item::WIG) );
 
-    if( not player->pos.x )
+    if( not player.pos.x )
         return 2;
 
     Vec messagePos;
@@ -222,7 +220,7 @@ int main( int argc, char** argv )
     {
         erase();
         
-        Inventory::iterator itemHere = item_at( player->pos );
+        Inventory::iterator itemHere = item_at( player.pos );
 
         if( itemHere != items.end() )
         {
@@ -240,17 +238,20 @@ int main( int argc, char** argv )
         unsigned int row = 0;
         FOR_EACH( map,    std::string& line, mvprintw(row++, 0, line.c_str()) );
         FOR_EACH( items,  Item& i,  mvaddch(i.pos.y, i.pos.x, i.image ) );
-        FOR_EACH( actors, Actor& a, mvaddch(a.pos.y, a.pos.x, a.image) );
+        FOR_EACH( npcs, Npc& n, mvaddch(n.pos.y, n.pos.x, n.image) );
+
+        mvaddch( player.pos.y, player.pos.x, player.image );
 
         mvprintw( messagePos.y, messagePos.x, lastMessage.c_str() );
+        lastMessage = "";
 
         // Print the inventory.
         mvprintw( messagePos.y + 3, 4, "You have:" );
-        if( player->inventory.size() )
+        if( player.inventory.size() )
         {
             unsigned int y = 0;
             FOR_EACH ( 
-                player->inventory, Item& i, 
+                player.inventory, Item& i, 
                 mvprintw( messagePos.y + 4 + y++, 6, i.name.c_str() ) 
             );
         }
@@ -259,8 +260,7 @@ int main( int argc, char** argv )
 
         refresh(); 
 
-        lastMessage = "";
-
+        player.move();
     }
 
 
