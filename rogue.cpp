@@ -65,11 +65,14 @@ struct Actor
     Vec pos;
     Inventory inventory;
 
+    int hp;
+
     char image;
 
     Actor( Vec pos, char image )
         : pos( pos ), image(image)
     {
+        hp = 5;
     }
 
     virtual void move() = 0;
@@ -160,6 +163,13 @@ Inventory::iterator item_at( Vec pos )
     );
 }
 
+NpcList::iterator npc_at( Vec pos )
+{
+    return std::find_if ( 
+        npcs.begin(), npcs.end(), [&](const Npc& n) { return n.pos == pos; }
+    );
+}
+
 bool walk( Actor* a, Vec dir )
 {
     Vec newPos = a->pos + dir;
@@ -167,13 +177,24 @@ bool walk( Actor* a, Vec dir )
     bool inBounds = newPos.x > 0 and newPos.y > 0;
     inBounds &= newPos.y < map.size() and newPos.x < map[newPos.y].size();
 
-    if( inBounds and map[newPos.y][newPos.x] != '#' )
+    NpcList::iterator npcHere = npc_at( newPos );
+
+    if( npcHere != npcs.end() )
+    {
+        lastMessage = "You punch the monster with your fist.";
+        if( ! --npcHere->hp )
+            npcs.erase( npcHere );
+    }
+    else if( inBounds and map[newPos.y][newPos.x] != '#' )
     {
         a->pos = newPos;
-        return true;
+    }
+    else
+    {
+        return false;
     }
 
-    return false;
+    return true;
 }
 
 int main( int argc, char** argv )
