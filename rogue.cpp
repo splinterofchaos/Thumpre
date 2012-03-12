@@ -4,6 +4,7 @@
 #include <cstdlib>
 
 #include <vector>
+#include <list>
 #include <string>
 #include <algorithm>
 
@@ -55,10 +56,11 @@ struct Item
 
 typedef std::vector< std::string > Map;
 typedef std::vector< Item > Inventory;
+typedef std::list< std::string > Logger;
 Map map;
 Inventory items;
-std::string lastMessage = "Hello";
 bool quit = false;
+Logger logger;
 
 struct Actor
 {
@@ -116,21 +118,21 @@ struct Player : public Actor
             if( itemHere != items.end() )
             {
                 transfer( &inventory, &items, itemHere );
-                lastMessage = "Got " + inventory.back().name + ".";
+                logger.push_back( "Got " + inventory.back().name + "." );
             }
             else
-                lastMessage = "There's nothing here.";
+                logger.push_back( "There's nothing here." );
 
             break;
 
-          case 'c': lastMessage = "..."; break;
+          case 'c': logger.push_back( "..." ); break;
           case 'q': quit = true; break;
-          default: lastMessage = "Is that key supposed to do something?"; break;
+          default: logger.push_back( "Is that key supposed to do something?" ); break;
         }
 
         if( inputDir.x or inputDir.y )
             if( not walk(this, inputDir) )
-                lastMessage = "Cannot move there.";
+                logger.push_back( "Cannot move there." );
     }
 };
 
@@ -181,7 +183,7 @@ bool walk( Actor* a, Vec dir )
 
     if( npcHere != npcs.end() )
     {
-        lastMessage = "You punch the monster with your fist.";
+        logger.push_back( "You punch the monster with your fist." );
         if( ! --npcHere->hp )
             npcs.erase( npcHere );
     }
@@ -244,27 +246,22 @@ int main( int argc, char** argv )
         Inventory::iterator itemHere = item_at( player.pos );
 
         if( itemHere != items.end() )
-        {
-            const std::string what = "Your foot hits a " + itemHere->name + ".";
-            if( lastMessage != "" )
-                lastMessage = lastMessage + "; " + what;
-            else
-                lastMessage = what;
-        }
+            logger.push_back( "Your foot hits a " + itemHere->name + "." );
 
         #define RNG( container ) container.begin(), container.end()
         #define FOR_EACH( container, value, block ) \
             std::for_each( RNG(container), [&]( const value ){ block; } )
 
         unsigned int row = 0;
-        FOR_EACH( map,    std::string& line, mvprintw(row++, 0, line.c_str()) );
-        FOR_EACH( items,  Item& i,  mvaddch(i.pos.y, i.pos.x, i.image ) );
-        FOR_EACH( npcs, Npc& n, mvaddch(n.pos.y, n.pos.x, n.image) );
+        FOR_EACH( map,    std::string& line, mvprintw(5 + row++, 1, line.c_str()) );
+        FOR_EACH( items,  Item& i,  mvaddch(5 + i.pos.y, 1 + i.pos.x, i.image ) );
+        FOR_EACH( npcs, Npc& n, mvaddch(5 + n.pos.y, 1 + n.pos.x, n.image) );
 
-        mvaddch( player.pos.y, player.pos.x, player.image );
+        mvaddch( 5 + player.pos.y, 1 + player.pos.x, player.image );
 
-        mvprintw( messagePos.y, messagePos.x, lastMessage.c_str() );
-        lastMessage = "";
+        row = 0;
+        FOR_EACH( logger, std::string& msg, mvprintw(1 + row++, 1, msg.c_str()) );
+        logger.clear();
 
         // Print the inventory.
         mvprintw( messagePos.y + 3, 4, "You have:" );
