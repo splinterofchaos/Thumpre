@@ -57,19 +57,8 @@ typedef std::vector< std::string > Map;
 typedef std::vector< Item > Inventory;
 Map map;
 Inventory items;
-
-void transfer( Inventory* to, Inventory* from, Inventory::iterator what )
-{
-    to->push_back( *what );
-    from->erase( what );
-}
-
-Inventory::iterator item_at( Vec pos )
-{
-    return std::find_if ( 
-        items.begin(), items.end(), [&](const Item& i) { return i.pos == pos; }
-    );
-}
+std::string lastMessage = "Hello";
+bool quit = false;
 
 struct Actor
 {
@@ -86,11 +75,27 @@ struct Actor
     virtual void move();
 };
 
+// TODO: When the code gets better organized, 
+// these oddly placed prototypes won't be necessary.
+bool walk( Actor* a, Vec dir );
+Inventory::iterator item_at( Vec pos );
+void transfer( Inventory* to, Inventory* from, Inventory::iterator what );
+
 struct Player : public Actor
 {
+    Player( Vec pos )
+        : Actor( pos, '@' )
+    {
+    }
+
     void move()
     {
-        Vec inputDir = { 0, 0 }; // The direction the user wants to move, if any.
+        // The direction the user wants to move, if any.
+        Vec inputDir = { 0, 0 }; 
+
+        // We need to know if we're standing on an item, but can't construct
+        // the object inside the switch, so do it now.
+        Inventory::iterator itemHere = item_at( pos );
 
         int key = getch();
         switch( key )
@@ -105,10 +110,9 @@ struct Player : public Actor
           case 'n': case '3': inputDir = Vec(  1,  1 ); break;
 
           case 'p': case 'g': 
-            Inventory::iterator itemHere = item_at( pos );
             if( itemHere != items.end() )
             {
-                transfer( inventory, &items, itemHere );
+                transfer( &inventory, &items, itemHere );
                 lastMessage = "Got " + inventory.back().name + ".";
             }
             else
@@ -122,13 +126,39 @@ struct Player : public Actor
         }
 
         if( inputDir.x or inputDir.y )
-            if( not walk(player, inputDir) )
+            if( not walk(this, inputDir) )
                 lastMessage = "Cannot move there.";
+    }
+};
+
+struct Npc : public Actor
+{
+    Npc( Vec pos, char image )
+        : Actor( pos, image )
+    {
+    }
+
+    void move()
+    {
+        // TODO
     }
 };
 
 typedef std::vector< Actor > ActorList;
 ActorList actors;
+
+void transfer( Inventory* to, Inventory* from, Inventory::iterator what )
+{
+    to->push_back( *what );
+    from->erase( what );
+}
+
+Inventory::iterator item_at( Vec pos )
+{
+    return std::find_if ( 
+        items.begin(), items.end(), [&](const Item& i) { return i.pos == pos; }
+    );
+}
 
 bool walk( Actor* a, Vec dir )
 {
@@ -165,7 +195,7 @@ int main( int argc, char** argv )
         pclose( mapgen );
     }
 
-    actors.push_back( Actor(Vec(0,0), '@') );
+    actors.push_back( Player(Vec(0,0)) );
     Actor* player = &actors[0];
 
     // (0,0) is an illegal position. If the player has an x, y is implied as
@@ -175,7 +205,7 @@ int main( int argc, char** argv )
             if( map[y][x] != '#' )
                 player->pos = { x, y };
 
-    actors.push_back( Actor(player->pos+Vec(0,3), 'k') );
+    actors.push_back( Npc(player->pos+Vec(0,3), 'k') );
     player = &actors[0];
 
     items.push_back( Item(player->pos, "Broom Handle", '/', Item::WOOD, Item::ROD) );
@@ -188,11 +218,8 @@ int main( int argc, char** argv )
     messagePos.x = 3;
     messagePos.y = map.size() + 3;
 
-    bool quit = false;
     while( not quit )
     {
-        static std::string lastMessage = "Hello";
-
         erase();
         
         Inventory::iterator itemHere = item_at( player->pos );
