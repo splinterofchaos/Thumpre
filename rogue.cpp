@@ -252,29 +252,44 @@ int main( int argc, char** argv )
         #define FOR_EACH( container, value, block ) \
             std::for_each( RNG(container), [&]( const value ){ block; } )
 
+        const int MAP_TOP = 5;
+        const int MAP_BOTTOM = MAP_TOP + map.size();
+
+        { // Draw the map.
+            // Instead of painting the map, then items, then actors onto the
+            // screen, just copy the map to a buffer, paint everything to it,
+            // and paint it to the screen. This means that buffer can be put
+            // anywhere on screen without making sure everything's being
+            // painted with the same offset.
+            Map toScreen = map;
+            FOR_EACH( items, Item& i, toScreen[i.pos.y][i.pos.x] = i.image );
+            FOR_EACH( npcs,  Npc&  n, toScreen[n.pos.y][n.pos.x] = n.image );
+
+            toScreen[player.pos.y][player.pos.x] = player.image;
+
+            unsigned int row = 0;
+            FOR_EACH ( 
+                toScreen, std::string& line, 
+                mvprintw(MAP_TOP + row++, 2, line.c_str())
+            );
+        }
+
         unsigned int row = 0;
-        FOR_EACH( map,    std::string& line, mvprintw(5 + row++, 1, line.c_str()) );
-        FOR_EACH( items,  Item& i,  mvaddch(5 + i.pos.y, 1 + i.pos.x, i.image ) );
-        FOR_EACH( npcs, Npc& n, mvaddch(5 + n.pos.y, 1 + n.pos.x, n.image) );
-
-        mvaddch( 5 + player.pos.y, 1 + player.pos.x, player.image );
-
-        row = 0;
         FOR_EACH( logger, std::string& msg, mvprintw(1 + row++, 1, msg.c_str()) );
         logger.clear();
 
         // Print the inventory.
-        mvprintw( messagePos.y + 3, 4, "You have:" );
+        row = MAP_BOTTOM + 2;
+        mvprintw( row++, 4, "You have:" );
         if( player.inventory.size() )
         {
-            unsigned int y = 0;
             FOR_EACH ( 
                 player.inventory, Item& i, 
-                mvprintw( messagePos.y + 4 + y++, 6, i.name.c_str() ) 
+                mvprintw( row++, 6, i.name.c_str() ) 
             );
         }
         else
-            mvprintw( messagePos.y + 4, 6, "Nothing." );
+            mvprintw( row, 6, "Nothing." );
 
         refresh(); 
 
