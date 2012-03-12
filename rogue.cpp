@@ -2,6 +2,7 @@
 #include <cstring>
 #include <cstdio>
 #include <cstdlib>
+#include <ctime> // To produce seed for srand.
 
 #include <vector>
 #include <list>
@@ -21,6 +22,11 @@ struct Vec
 bool operator == ( const Vec& a, const Vec& b )
 {
     return a.x == b.x and a.y == b.y;
+}
+
+bool operator != ( const Vec& a, const Vec& b )
+{
+    return ! ( a == b );
 }
 
 Vec operator + ( const Vec& a, const Vec& b )
@@ -151,6 +157,7 @@ struct Npc : public Actor
 
 typedef std::vector< Npc > NpcList;
 NpcList npcs;
+Player player( Vec(0,0) );
 
 void transfer( Inventory* to, Inventory* from, Inventory::iterator what )
 {
@@ -199,6 +206,24 @@ bool walk( Actor* a, Vec dir )
     return true;
 }
 
+// Produces a random, non-wall, non-occupied position.
+// It asserts that a free space exists and never exits otherwise.
+Vec random_position()
+{
+    while( true )
+    {
+        Vec p( 0, 0 );
+        p.y = std::rand() % map.size();
+        p.x = std::rand() % map[0].size();
+
+        if( item_at(p) == items.end() and 
+            npc_at(p)  == npcs.end()  and
+            p != player.pos           and
+            map[p.y][p.x] != '#' )
+            return p;
+    }
+}
+
 int main( int argc, char** argv )
 {
     initscr();
@@ -206,6 +231,8 @@ int main( int argc, char** argv )
     noecho();
     refresh();
     keypad(stdscr, TRUE);
+
+    std::srand( std::time(0) );
 
     { // Read in the map from mapgen, the generic map generator.
         FILE* mapgen = popen( "./mapgen 20x15", "r" ); 
@@ -218,19 +245,12 @@ int main( int argc, char** argv )
         pclose( mapgen );
     }
 
-    Player player( Vec(0,0) );
+    player.pos = random_position();
 
-    // (0,0) is an illegal position. If the player has an x, y is implied as
-    // both are set at once. Loop until x (and implicitly, y) is set.
-    for( int y=1; not player.pos.x and y<map.size(); y++ )
-        for( int x=1; not player.pos.x and x<map[y].size(); x++ )
-            if( map[y][x] != '#' )
-                player.pos = { x, y };
+    npcs.push_back( Npc(random_position(), 'k') );
 
-    npcs.push_back( Npc(player.pos+Vec(0,3), 'k') );
-
-    items.push_back( Item(player.pos, "Broom Handle", '/', Item::WOOD, Item::ROD) );
-    items.push_back( Item(player.pos+Vec(1,0), "Horse Hair", '"', Item::HAIR, Item::WIG) );
+    items.push_back( Item(random_position(), "Broom Handle", '/', Item::WOOD, Item::ROD) );
+    items.push_back( Item(random_position(), "Horse Hair",   '"', Item::HAIR, Item::WIG) );
 
     if( not player.pos.x )
         return 2;
