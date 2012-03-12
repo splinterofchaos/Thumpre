@@ -4,6 +4,7 @@
 #include <cstdlib>
 
 #include <vector>
+#include <list>
 #include <string>
 #include <algorithm>
 
@@ -55,10 +56,11 @@ struct Item
 
 typedef std::vector< std::string > Map;
 typedef std::vector< Item > Inventory;
+typedef std::list< std::string > Logger;
 Map map;
 Inventory items;
-std::string lastMessage = "Hello";
 bool quit = false;
+Logger logger;
 
 struct Actor
 {
@@ -116,21 +118,21 @@ struct Player : public Actor
             if( itemHere != items.end() )
             {
                 transfer( &inventory, &items, itemHere );
-                lastMessage = "Got " + inventory.back().name + ".";
+                logger.push_back( "Got " + inventory.back().name + "." );
             }
             else
-                lastMessage = "There's nothing here.";
+                logger.push_back( "There's nothing here." );
 
             break;
 
-          case 'c': lastMessage = "..."; break;
+          case 'c': logger.push_back( "..." ); break;
           case 'q': quit = true; break;
-          default: lastMessage = "Is that key supposed to do something?"; break;
+          default: logger.push_back( "Is that key supposed to do something?" ); break;
         }
 
         if( inputDir.x or inputDir.y )
             if( not walk(this, inputDir) )
-                lastMessage = "Cannot move there.";
+                logger.push_back( "Cannot move there." );
     }
 };
 
@@ -181,7 +183,7 @@ bool walk( Actor* a, Vec dir )
 
     if( npcHere != npcs.end() )
     {
-        lastMessage = "You punch the monster with your fist.";
+        logger.push_back( "You punch the monster with your fist." );
         if( ! --npcHere->hp )
             npcs.erase( npcHere );
     }
@@ -200,7 +202,7 @@ bool walk( Actor* a, Vec dir )
 int main( int argc, char** argv )
 {
     initscr();
-    //cbreak();
+    cbreak();
     noecho();
     refresh();
     keypad(stdscr, TRUE);
@@ -244,40 +246,50 @@ int main( int argc, char** argv )
         Inventory::iterator itemHere = item_at( player.pos );
 
         if( itemHere != items.end() )
-        {
-            const std::string what = "Your foot hits a " + itemHere->name + ".";
-            if( lastMessage != "" )
-                lastMessage = lastMessage + "; " + what;
-            else
-                lastMessage = what;
-        }
+            logger.push_back( "Your foot hits a " + itemHere->name + "." );
 
         #define RNG( container ) container.begin(), container.end()
         #define FOR_EACH( container, value, block ) \
             std::for_each( RNG(container), [&]( const value ){ block; } )
 
+        const int MAP_TOP = 5;
+        const int MAP_BOTTOM = MAP_TOP + map.size();
+
+        { // Draw the map.
+            // Instead of painting the map, then items, then actors onto the
+            // screen, just copy the map to a buffer, paint everything to it,
+            // and paint it to the screen. This means that buffer can be put
+            // anywhere on screen without making sure everything's being
+            // painted with the same offset.
+            Map toScreen = map;
+            FOR_EACH( items, Item& i, toScreen[i.pos.y][i.pos.x] = i.image );
+            FOR_EACH( npcs,  Npc&  n, toScreen[n.pos.y][n.pos.x] = n.image );
+
+            toScreen[player.pos.y][player.pos.x] = player.image;
+
+            unsigned int row = 0;
+            FOR_EACH ( 
+                toScreen, std::string& line, 
+                mvprintw(MAP_TOP + row++, 2, line.c_str())
+            );
+        }
+
         unsigned int row = 0;
-        FOR_EACH( map,    std::string& line, mvprintw(row++, 0, line.c_str()) );
-        FOR_EACH( items,  Item& i,  mvaddch(i.pos.y, i.pos.x, i.image ) );
-        FOR_EACH( npcs, Npc& n, mvaddch(n.pos.y, n.pos.x, n.image) );
-
-        mvaddch( player.pos.y, player.pos.x, player.image );
-
-        mvprintw( messagePos.y, messagePos.x, lastMessage.c_str() );
-        lastMessage = "";
+        FOR_EACH( logger, std::string& msg, mvprintw(1 + row++, 1, msg.c_str()) );
+        logger.clear();
 
         // Print the inventory.
-        mvprintw( messagePos.y + 3, 4, "You have:" );
+        row = MAP_BOTTOM + 2;
+        mvprintw( row++, 4, "You have:" );
         if( player.inventory.size() )
         {
-            unsigned int y = 0;
             FOR_EACH ( 
                 player.inventory, Item& i, 
-                mvprintw( messagePos.y + 4 + y++, 6, i.name.c_str() ) 
+                mvprintw( row++, 6, i.name.c_str() ) 
             );
         }
         else
-            mvprintw( messagePos.y + 4, 6, "Nothing." );
+            mvprintw( row, 6, "Nothing." );
 
         refresh(); 
 
