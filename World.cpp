@@ -11,37 +11,6 @@ bool quit = false;
 NpcList npcs;
 Player player( Vec(0,0) );
 
-Vec::Vec()
-{
-    x = y = 0;
-}
-
-Vec::Vec( int x, int y )
-    : x(x), y(y)
-{
-}
-
-bool operator == ( const Vec& a, const Vec& b )
-{
-    return a.x == b.x and a.y == b.y;
-}
-
-bool operator != ( const Vec& a, const Vec& b )
-{
-    return ! ( a == b );
-}
-
-Vec operator + ( const Vec& a, const Vec& b )
-{
-    return { a.x + b.x, a.y + b.y };
-}
-
-Item:: Item( Vec pos, const std::string& name, char image, 
-             Material material, Type type )
-    : pos(pos), name(name), image(image), material(material), type(type)
-{
-}
-
 Actor::Actor( Vec pos, char image )
 : pos( pos ), image(image)
 {

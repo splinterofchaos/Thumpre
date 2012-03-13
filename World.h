@@ -1,15 +1,12 @@
 
 #pragma once
 
+#include "Vec.h"
+#include "Item.h"
+
 #include <vector>
 #include <list>
 #include <string>
-
-// A minimal 2D vector class.
-struct Vec;
-
-// An abstraction for all items.
-struct Item;
 
 // An abstraction of any NPC or PC.
 struct Actor;
@@ -21,44 +18,14 @@ typedef std::vector< Item >        Inventory;
 typedef std::list< std::string >   Logger;
 typedef std::vector< Npc > NpcList;
 
+// We'll use globals defined in World.cpp to represent the current
+// map, the map's inventory, a list of all NPC's and the player.
 extern Map map;
 extern Inventory items;
 extern Logger logger;
 extern bool quit;
 extern NpcList npcs;
 extern Player player;
-
-struct Vec
-{
-    int x, y;
-
-    Vec();
-    Vec( int x, int y );
-};
-
-struct Item
-{
-    enum Material
-    {
-        WOOD,
-        HAIR
-    };
-
-    enum Type
-    {
-        ROD,
-        WIG
-    };
-
-    Vec pos;
-    std::string name;
-    char     image;
-    Material material;
-    Type     type;
-
-    Item( Vec pos, const std::string& name, char image, 
-          Material material, Type type );
-};
 
 struct Actor
 {
@@ -84,10 +51,6 @@ struct Npc : public Actor
     Npc( Vec pos, char image );
     void move();
 };
-
-bool operator == ( const Vec& a, const Vec& b );
-bool operator != ( const Vec& a, const Vec& b );
-Vec operator  +  ( const Vec& a, const Vec& b );
 
 bool walk( Actor* a, Vec dir );
 Inventory::iterator item_at( Vec pos );
