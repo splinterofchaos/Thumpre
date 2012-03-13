@@ -9,8 +9,13 @@ all : rogue mapgen
 
 compile = ${CXX} ${CFLAGS}
 
-rogue : rogue.cpp mapgen
-	${compile} rogue.cpp -o rogue ${LDFLAGS}
+obj = .world.o
+
+rogue : rogue.cpp mapgen ${obj}
+	${compile} rogue.cpp -o rogue ${LDFLAGS} ${obj}
+	
+.world.o : World.*
+	${compile} -c World.cpp -o .world.o
 
 mapgen : mapgen.cpp
 	${compile} mapgen.cpp -o mapgen
