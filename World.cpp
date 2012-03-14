@@ -20,6 +20,69 @@ Actor::Actor( Vec pos, char image )
 Player::Player( Vec pos )
     : Actor( pos, '@' )
 {
+    turnOver = comboMode = false;
+}
+
+extern void print_log( Vec where );
+
+Inventory::iterator inp_inventory_item( Inventory& inventory )
+{
+    std::string prompt = "Choose an item (";
+    if( inventory.size() )
+    {
+        prompt += "a-";
+        prompt.push_back( inventory.size() - 1 + 'a' );
+    }
+
+    prompt += ") ";
+    
+    logger.push_back( prompt );
+    print_log( Vec(0,1) );
+
+    int c = getch() - 'a';
+
+    if( c >= 0 and c < inventory.size() )
+    {
+        Inventory::iterator ret = inventory.begin() + c;
+        return ret;
+    }
+    else
+    {
+        return inventory.end();
+    }
+}
+
+bool combine( Inventory* inv )
+{
+    logger.clear();
+
+    if( inv->size() < 2 )
+    {
+        logger.push_back( 
+            std::string("You have ") 
+            + ( ! inv->size() ? "nothing" : "only one thing." )
+        );
+        return false;
+    }
+
+
+    logger.push_back( "Combine... " );
+
+    Inventory::iterator first  = inp_inventory_item(*inv);
+    Inventory::iterator second = inp_inventory_item(*inv);
+
+    if( first == inv->end() or second == inv->end() )
+        return false;
+
+    if( first->type == Item::ROD and second->type == Item::WIG )
+    {
+        Item product( Vec(0,0), "Wooden Broom", '/', Item::WOOD, Item::ROD );
+        inv->erase( first );
+        inv->erase( second );
+        inv->push_back( product );
+    }
+
+    return true;
 }
 
 void Player::move()
@@ -30,6 +93,15 @@ void Player::move()
     // We need to know if we're standing on an item, but can't construct
     // the object inside the switch, so do it now.
     Inventory::iterator itemHere = item_at( pos );
+
+    // Most actions will end the turn; if one doesn't, it has to unset this.
+    turnOver = true;
+
+    if( comboMode )
+    {
+        comboMode = false;
+        
+    }
 
     int key = getch();
     switch( key )
@@ -44,15 +116,21 @@ void Player::move()
       case 'n': case '3': inputDir = Vec(  1,  1 ); break;
 
       case 'p': case 'g':
-                          if( itemHere != items.end() )
-                          {
-                              transfer( &inventory, &items, itemHere );
-                              logger.push_back( "Got " + inventory.back().name + "." );
-                          }
-                          else
-                              logger.push_back( "There's nothing here." );
+          if( itemHere != items.end() )
+          {
+              transfer( &inventory, &items, itemHere );
+              logger.push_back( "Got " + inventory.back().name + "." );
+          }
+          else
+          {
+              logger.push_back( "There's nothing here." );
+          }
 
-      break;
+          break;
+
+      case 'C': if( ! combine(&inventory) )
+                    logger.push_back( "I can't combine them." ); 
+                break;
 
       case 'c': logger.push_back( "..." ); break;
       case 'q': quit = true; break;

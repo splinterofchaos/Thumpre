@@ -83,13 +83,15 @@ void print_inventory( Vec where )
 {
     // Print the inventory.
     mvprintw( where.y++, where.x, "You have:" );
+    unsigned int y = 0;
+    unsigned int x = where.x + 2;
     if( player.inventory.size() )
         FOR_EACH ( 
             player.inventory, Item& i, 
-            mvprintw( where.y++, where.x+2, i.name.c_str() ) 
+            mvprintw( where.y + y++, x, "%c - %s", 'a'+y, i.name.c_str() ) 
         );
     else
-        mvprintw( where.y, where.x+2, "Nothing." );
+        mvprintw( where.y + y, where.x + 2, "Nothing." );
 }
 
 int main( int argc, char** argv )
@@ -131,12 +133,14 @@ int main( int argc, char** argv )
         const int MAP_BOTTOM = MAP_TOP + map.size();
 
         print_map( Vec(2, MAP_TOP) );
-        print_log( Vec(1, 0) );
         print_inventory( Vec(4, MAP_BOTTOM+2) );
+        print_log( Vec(1, 0) );
 
         refresh(); 
 
-        player.move();
+        player.turnOver = false;
+        while( not player.turnOver )
+            player.move();
     }
 
 

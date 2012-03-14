@@ -42,6 +42,9 @@ struct Actor
 
 struct Player : public Actor
 {
+    bool turnOver;
+    bool comboMode;
+
     Player( Vec pos );
     void move();
 };
