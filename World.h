@@ -35,6 +35,11 @@ struct Actor
     int hp;
     char image;
 
+    int strength;
+
+    // Used by Player, ignored otherwise.
+    bool turnOver;
+
     Actor( Vec pos, char image );
 
     virtual void move() = 0;
@@ -42,9 +47,6 @@ struct Actor
 
 struct Player : public Actor
 {
-    bool turnOver;
-    bool comboMode;
-
     Player( Vec pos );
     void move();
 };

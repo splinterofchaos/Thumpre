@@ -14,13 +14,13 @@ Player player( Vec(0,0) );
 Actor::Actor( Vec pos, char image )
 : pos( pos ), image(image)
 {
-    hp = 5;
+    hp = 100;
 }
 
 Player::Player( Vec pos )
     : Actor( pos, '@' )
 {
-    turnOver = comboMode = false;
+    turnOver = false;
 }
 
 extern void print_log( Vec where );
@@ -97,12 +97,6 @@ void Player::move()
     // Most actions will end the turn; if one doesn't, it has to unset this.
     turnOver = true;
 
-    if( comboMode )
-    {
-        comboMode = false;
-        
-    }
-
     int key = getch();
     switch( key )
     {
@@ -171,6 +165,43 @@ NpcList::iterator npc_at( Vec pos )
     );
 }
 
+struct AttackValue
+{
+    int strength;
+    
+    AttackValue( const Actor& who, const Item& withWhat )
+    {
+        strength = who.hp / 8;
+        
+        int weaponVal = 0;
+
+        switch( withWhat.material )
+        {
+          case Item::WOOD: weaponVal = 10;
+          case Item::HAIR: weaponVal = 2;
+          case Item::SKIN: weaponVal = 4;
+        }
+
+        switch( withWhat.type )
+        { 
+          case Item::ROD:  weaponVal *= 5;
+          case Item::WIG:  weaponVal *= 1;
+          case Item::HAND: weaponVal *= 4;
+        }
+
+        strength += weaponVal;
+    }
+
+    bool hit( Actor* victim )
+    {
+        if( ! victim )
+            return false;
+
+        victim->hp -= strength;
+        return true;
+    }
+};
+
 bool walk( Actor* a, Vec dir )
 {
     Vec newPos = a->pos + dir;
@@ -182,8 +213,25 @@ bool walk( Actor* a, Vec dir )
 
     if( npcHere != npcs.end() )
     {
-        logger.push_back( "You punch the monster with your fist." );
-        if( ! --npcHere->hp )
+        logger.push_back( "Hit with what? (f=fist, i=item)" );
+        print_log( Vec(0,1) );
+
+        static Item fist( a->pos, "fist", 'F', Item::SKIN, Item::HAND );
+
+        Item* weapon = 0;
+        Inventory::iterator itWeapon;
+        switch( getch() )
+        {
+          case 'f': weapon = &fist; break;
+          case 'i': itWeapon = inp_inventory_item(a->inventory); 
+                    weapon = &(*itWeapon);
+        }
+
+        AttackValue atk( *a, *weapon );
+        if( atk.hit( &(*npcHere) ) )
+            logger.push_back( "You hit it." );
+
+        if( npcHere->hp < 0 )
             npcs.erase( npcHere );
     }
     else if( inBounds and map[newPos.y][newPos.x] != '#' )

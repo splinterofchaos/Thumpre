@@ -10,13 +10,15 @@ struct Item
     enum Material
     {
         WOOD,
-        HAIR
+        HAIR,
+        SKIN
     };
 
     enum Type
     {
         ROD,
-        WIG
+        WIG,
+        HAND
     };
 
     Vec pos;
