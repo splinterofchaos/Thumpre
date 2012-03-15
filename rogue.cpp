@@ -18,6 +18,8 @@
 #define FOR_EACH( container, value, block ) \
     std::for_each( RNG(container), [&]( const value ){ block; } )
 
+Vec mapPos, inventoryPos, logPos;
+
 // Produces a random, non-wall, non-occupied position.
 // It asserts that a free space exists and never exits otherwise.
 Vec random_position()
@@ -49,7 +51,7 @@ bool read_map()
     return true;
 }
 
-void print_map( Vec where )
+void print_map()
 {
     // Instead of painting the map, then items, then actors onto the  screen,
     // just copy the map to a buffer, paint everything to it,  and paint it to
@@ -65,34 +67,34 @@ void print_map( Vec where )
     unsigned int row = 0;
     FOR_EACH ( 
         toScreen, std::string& line, 
-        mvprintw(where.y + row++, where.x, line.c_str())
+        mvprintw( mapPos.y + row++, mapPos.x, line.c_str() )
     );
 }
 
-void print_log( Vec where )
+void print_log()
 {
     unsigned int row = 0;
     FOR_EACH ( 
         logger, std::string& msg, 
-        mvprintw( where.y + row++, where.x, msg.c_str() ) 
+        mvprintw( logPos.y + row++, logPos.x, msg.c_str() ) 
     );
     logger.clear();
 }
 
-void print_inventory( Vec where )
+void print_inventory()
 {
     // Print the inventory.
-    mvprintw( where.y++, where.x, "You have:" );
+    mvprintw( inventoryPos.y++, inventoryPos.x, "You have:" );
 
     unsigned int y = 0;
-    unsigned int x = where.x + 2;
+    unsigned int x = inventoryPos.x + 2;
     if( actors[0].inventory.size() )
         FOR_EACH ( 
             actors.front().inventory, Item& i, 
-            mvprintw( where.y + y++, x, "%c - %s", 'a'+y, i.name.c_str() ) 
+            mvprintw( inventoryPos.y + y++, x, "%c - %s", 'a'+y, i.name.c_str() ) 
         );
     else
-        mvprintw( where.y + y, where.x + 2, "Nothing." );
+        mvprintw( inventoryPos.y + y, inventoryPos.x + 2, "Nothing." );
 }
 
 int main( int argc, char** argv )
@@ -115,12 +117,16 @@ int main( int argc, char** argv )
     items.push_back( Item(random_position(), "Broom Handle", '/', Item::WOOD, Item::ROD) );
     items.push_back( Item(random_position(), "Horse Hair",   '"', Item::HAIR, Item::WIG) );
 
-    Vec messagePos;
-    messagePos.x = 3;
-    messagePos.y = map.size() + 3;
 
     while( not quit )
     {
+        const int MAP_TOP = 5;
+        const int MAP_BOTTOM = MAP_TOP + map.size();
+
+        logPos = Vec( 2, 1 );
+        inventoryPos = Vec( 4, MAP_BOTTOM + 2 );
+        mapPos = Vec( 2, MAP_TOP );
+
         erase();
         
         Inventory::iterator itemHere = item_at( actors[0].pos );
@@ -128,12 +134,9 @@ int main( int argc, char** argv )
         if( itemHere != items.end() )
             logger.push_back( "Your foot hits a " + itemHere->name + "." );
 
-        const int MAP_TOP = 5;
-        const int MAP_BOTTOM = MAP_TOP + map.size();
-
-        print_map( Vec(2, MAP_TOP) );
-        print_inventory( Vec(4, MAP_BOTTOM+2) );
-        print_log( Vec(1, 0) );
+        print_map();
+        print_inventory();
+        print_log();
 
         refresh(); 
 

@@ -11,7 +11,7 @@ bool quit = false;
 ActorList actors;
 
 // Defined at main.
-extern void print_log( Vec where );
+extern void print_log();
 
 Inventory::iterator inp_inventory_item( Inventory& inventory )
 {
@@ -25,7 +25,7 @@ Inventory::iterator inp_inventory_item( Inventory& inventory )
     prompt += ") ";
     
     logger.push_back( prompt );
-    print_log( Vec(0,1) );
+    print_log();
 
     int c = getch() - 'a';
 
@@ -190,7 +190,7 @@ bool walk( Actor* a, Vec dir )
     if( actorHere != actors.end() )
     {
         logger.push_back( "Hit with what? (f=fist, i=item)" );
-        print_log( Vec(0,1) );
+        print_log();
 
         static Item fist( a->pos, "fist", 'F', Item::SKIN, Item::HAND );
 
