@@ -10,6 +10,69 @@ Logger logger;
 bool quit = false;
 ActorList actors;
 
+// Defined at main.
+extern void print_log( Vec where );
+
+Inventory::iterator inp_inventory_item( Inventory& inventory )
+{
+    std::string prompt = "Choose an item (";
+    if( inventory.size() )
+    {
+        prompt += "a-";
+        prompt.push_back( inventory.size() - 1 + 'a' );
+    }
+
+    prompt += ") ";
+    
+    logger.push_back( prompt );
+    print_log( Vec(0,1) );
+
+    int c = getch() - 'a';
+
+    if( c >= 0 and c < inventory.size() )
+    {
+        Inventory::iterator ret = inventory.begin() + c;
+        return ret;
+    }
+    else
+    {
+        return inventory.end();
+    }
+}
+
+bool combine( Inventory* inv )
+{
+    logger.clear();
+
+    if( inv->size() < 2 )
+    {
+        logger.push_back( 
+            std::string("You have ") 
+            + ( ! inv->size() ? "nothing" : "only one thing." )
+        );
+        return false;
+    }
+
+
+    logger.push_back( "Combine... " );
+
+    Inventory::iterator first  = inp_inventory_item(*inv);
+    Inventory::iterator second = inp_inventory_item(*inv);
+
+    if( first == inv->end() or second == inv->end() )
+        return false;
+
+    if( first->type == Item::ROD and second->type == Item::WIG )
+    {
+        Item product( Vec(0,0), "Wooden Broom", '/', Item::WOOD, Item::ROD );
+        inv->erase( first );
+        inv->erase( second );
+        inv->push_back( product );
+    }
+
+    return true;
+}
+
 void move_player( Actor* pl )
 {
     Actor& player = *pl;
@@ -34,15 +97,19 @@ void move_player( Actor* pl )
       case 'n': case '3': inputDir = Vec(  1,  1 ); break;
 
       case 'p': case 'g':
-                          if( itemHere != items.end() )
-                          {
-                              transfer( &player.inventory, &items, itemHere );
-                              logger.push_back( "Got " + player.inventory.back().name + "." );
-                          }
-                          else
-                              logger.push_back( "There's nothing here." );
+          if( itemHere != items.end() )
+          {
+              transfer( &player.inventory, &items, itemHere );
+              logger.push_back( "Got " + player.inventory.back().name + "." );
+          }
+          else
+              logger.push_back( "There's nothing here." );
 
-      break;
+          break;
+
+      case 'C': if( ! combine(&player.inventory) )
+                    logger.push_back( "I can't combine them." ); 
+                break;
 
       case 'c': logger.push_back( "..." ); break;
       case 'q': quit = true; break;
@@ -74,6 +141,43 @@ ActorList::iterator actor_at( Vec pos )
     );
 }
 
+struct AttackValue
+{
+    int strength;
+    
+    AttackValue( const Actor& who, const Item& withWhat )
+    {
+        strength = who.hp / 8;
+        
+        int weaponVal = 0;
+
+        switch( withWhat.material )
+        {
+          case Item::WOOD: weaponVal = 10;
+          case Item::HAIR: weaponVal = 2;
+          case Item::SKIN: weaponVal = 4;
+        }
+
+        switch( withWhat.type )
+        { 
+          case Item::ROD:  weaponVal *= 5;
+          case Item::WIG:  weaponVal *= 1;
+          case Item::HAND: weaponVal *= 4;
+        }
+
+        strength += weaponVal;
+    }
+
+    bool hit( Actor* victim )
+    {
+        if( ! victim )
+            return false;
+
+        victim->hp -= strength;
+        return true;
+    }
+};
+
 bool walk( Actor* a, Vec dir )
 {
     Vec newPos = a->pos + dir;
@@ -85,8 +189,25 @@ bool walk( Actor* a, Vec dir )
 
     if( actorHere != actors.end() )
     {
-        logger.push_back( "You punch the monster with your fist." );
-        if( ! --actorHere->hp )
+        logger.push_back( "Hit with what? (f=fist, i=item)" );
+        print_log( Vec(0,1) );
+
+        static Item fist( a->pos, "fist", 'F', Item::SKIN, Item::HAND );
+
+        Item* weapon = 0;
+        Inventory::iterator itWeapon;
+        switch( getch() )
+        {
+          case 'f': weapon = &fist; break;
+          case 'i': itWeapon = inp_inventory_item(a->inventory); 
+                    weapon = &(*itWeapon);
+        }
+
+        AttackValue atk( *a, *weapon );
+        if( atk.hit( &(*actorHere) ) )
+            logger.push_back( "You hit it." );
+
+        if( actorHere->hp < 0 )
             actors.erase( actorHere );
     }
     else if( inBounds and map[newPos.y][newPos.x] != '#' )
