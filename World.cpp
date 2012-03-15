@@ -8,28 +8,18 @@ Map map;
 Inventory items;
 Logger logger;
 bool quit = false;
-NpcList npcs;
-Player player( Vec(0,0) );
+ActorList actors;
 
-Actor::Actor( Vec pos, char image )
-: pos( pos ), image(image)
+void move_player( Actor* pl )
 {
-    hp = 5;
-}
+    Actor& player = *pl;
 
-Player::Player( Vec pos )
-    : Actor( pos, '@' )
-{
-}
-
-void Player::move()
-{
     // The direction the user wants to move, if any.
     Vec inputDir = { 0, 0 }; 
 
     // We need to know if we're standing on an item, but can't construct
     // the object inside the switch, so do it now.
-    Inventory::iterator itemHere = item_at( pos );
+    Inventory::iterator itemHere = item_at( player.pos );
 
     int key = getch();
     switch( key )
@@ -46,8 +36,8 @@ void Player::move()
       case 'p': case 'g':
                           if( itemHere != items.end() )
                           {
-                              transfer( &inventory, &items, itemHere );
-                              logger.push_back( "Got " + inventory.back().name + "." );
+                              transfer( &player.inventory, &items, itemHere );
+                              logger.push_back( "Got " + player.inventory.back().name + "." );
                           }
                           else
                               logger.push_back( "There's nothing here." );
@@ -60,17 +50,8 @@ void Player::move()
     }
 
     if( inputDir.x or inputDir.y )
-        if( not walk(this, inputDir) )
+        if( not walk(&player, inputDir) )
             logger.push_back( "Cannot move there." );
-}
-
-Npc::Npc( Vec pos, char image )
-    : Actor( pos, image )
-{
-}
-
-void Npc::move()
-{
 }
 
 void transfer( Inventory* to, Inventory* from, Inventory::iterator what )
@@ -86,10 +67,10 @@ Inventory::iterator item_at( Vec pos )
     );
 }
 
-NpcList::iterator npc_at( Vec pos )
+ActorList::iterator actor_at( Vec pos )
 {
     return std::find_if ( 
-        npcs.begin(), npcs.end(), [&](const Npc& n) { return n.pos == pos; }
+        actors.begin(), actors.end(), [&](const Actor& n) { return n.pos == pos; }
     );
 }
 
@@ -100,13 +81,13 @@ bool walk( Actor* a, Vec dir )
     bool inBounds = newPos.x > 0 and newPos.y > 0;
     inBounds &= newPos.y < map.size() and newPos.x < map[newPos.y].size();
 
-    NpcList::iterator npcHere = npc_at( newPos );
+    ActorList::iterator actorHere = actor_at( newPos );
 
-    if( npcHere != npcs.end() )
+    if( actorHere != actors.end() )
     {
         logger.push_back( "You punch the monster with your fist." );
-        if( ! --npcHere->hp )
-            npcs.erase( npcHere );
+        if( ! --actorHere->hp )
+            actors.erase( actorHere );
     }
     else if( inBounds and map[newPos.y][newPos.x] != '#' )
     {

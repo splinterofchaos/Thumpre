@@ -4,6 +4,7 @@
 #include "Vec.h"
 
 #include <string>
+#include <vector>
 
 struct Item
 {
@@ -29,3 +30,4 @@ struct Item
           Material material, Type type );
 };
 
+typedef std::vector< Item > Inventory;
