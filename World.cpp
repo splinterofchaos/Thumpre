@@ -10,13 +10,6 @@ Logger logger;
 bool quit = false;
 ActorList actors;
 
-Actor::Actor( Vec pos, char image )
-: pos( pos ), image(image)
-{
-    hp = 5;
-    playerControlled = false;
-}
-
 void move_player( Actor* pl )
 {
     Actor& player = *pl;

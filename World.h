@@ -3,18 +3,13 @@
 
 #include "Vec.h"
 #include "Item.h"
+#include "Actor.h"
 
 #include <vector>
 #include <list>
 #include <string>
 
-// An abstraction of any NPC or PC.
-struct Actor;
-struct Player;
-struct Npc;
-
 typedef std::vector< std::string > Map;
-typedef std::vector< Item >        Inventory;
 typedef std::list< std::string >   Logger;
 typedef std::vector< Actor > ActorList;
 
@@ -25,20 +20,6 @@ extern Inventory items;
 extern Logger logger;
 extern bool quit;
 extern ActorList actors;
-
-struct Actor
-{
-    Vec pos;
-    Inventory inventory;
-
-    int hp;
-    char image;
-
-    bool playerControlled;
-
-    Actor( Vec pos, char image );
-};
-
 
 bool walk( Actor* a, Vec dir );
 Inventory::iterator item_at( Vec pos );
