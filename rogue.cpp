@@ -28,9 +28,8 @@ Vec random_position()
         p.y = std::rand() % map.size();
         p.x = std::rand() % map[0].size();
 
-        if( item_at(p) == items.end() and 
-            npc_at(p)  == npcs.end()  and
-            p != player.pos           and
+        if( item_at(p)  == items.end()  and 
+            actor_at(p) == actors.end()  and
             map[p.y][p.x] != '#' )
             return p;
     }
@@ -57,9 +56,10 @@ void print_map( Vec where )
     // the screen. This means that buffer can be put  anywhere on screen
     // without making sure everything's being  painted with the same offset.
     Map toScreen = map;
-    FOR_EACH( items, Item& i, toScreen[i.pos.y][i.pos.x] = i.image );
-    FOR_EACH( npcs,  Npc&  n, toScreen[n.pos.y][n.pos.x] = n.image );
+    FOR_EACH( items, Item&  i, toScreen[i.pos.y][i.pos.x] = i.image );
+    FOR_EACH( actors,  Actor& n, toScreen[n.pos.y][n.pos.x] = n.image );
 
+    Actor& player = actors.front();
     toScreen[player.pos.y][player.pos.x] = player.image;
 
     unsigned int row = 0;
@@ -83,9 +83,9 @@ void print_inventory( Vec where )
 {
     // Print the inventory.
     mvprintw( where.y++, where.x, "You have:" );
-    if( player.inventory.size() )
+    if( actors.front().inventory.size() )
         FOR_EACH ( 
-            player.inventory, Item& i, 
+            actors.front().inventory, Item& i, 
             mvprintw( where.y++, where.x+2, i.name.c_str() ) 
         );
     else
@@ -104,15 +104,13 @@ int main( int argc, char** argv )
 
     read_map();
 
-    player.pos = random_position();
+    actors.push_back( Actor(random_position(), '@') );
+    actors.back().playerControlled = true;
 
-    npcs.push_back( Npc(random_position(), 'k') );
+    actors.push_back( Actor(random_position(), 'k') );
 
     items.push_back( Item(random_position(), "Broom Handle", '/', Item::WOOD, Item::ROD) );
     items.push_back( Item(random_position(), "Horse Hair",   '"', Item::HAIR, Item::WIG) );
-
-    if( not player.pos.x )
-        return 2;
 
     Vec messagePos;
     messagePos.x = 3;
@@ -122,7 +120,7 @@ int main( int argc, char** argv )
     {
         erase();
         
-        Inventory::iterator itemHere = item_at( player.pos );
+        Inventory::iterator itemHere = item_at( actors[0].pos );
 
         if( itemHere != items.end() )
             logger.push_back( "Your foot hits a " + itemHere->name + "." );
@@ -136,7 +134,7 @@ int main( int argc, char** argv )
 
         refresh(); 
 
-        player.move();
+        move_player( &actors.front() );
     }
 
 
