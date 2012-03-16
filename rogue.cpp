@@ -51,6 +51,57 @@ bool read_map()
     return true;
 }
 
+void show_bresenham_line( Map* dst, Vec from, Vec to, const Map& src )
+{
+    bool steep = std::abs( to.y - from.y ) > std::abs( to.x - from.x );
+
+    if( steep )
+    {
+        std::swap( to.x, to.y );
+        std::swap( from.x, from.y );
+    }
+
+    Vec delta = to - from; 
+    delta.x = std::abs( delta.x );
+    delta.y = std::abs( delta.y );
+    
+    int error = delta.x / 2;
+
+    Vec step( 0, 0 );
+
+    if( to.x > from.x )
+        step.x = 1;
+    else if( to.x < from.x )
+        step.x = -1;
+
+    if( to.y > from.y )
+        step.y = 1;
+    else if( to.y < from.y )
+        step.y = -1;
+
+    int y = from.y;
+    for( int x = from.x; x != to.x; x += step.x )
+    {
+        if( x < 0 or x >= map[0].size() or
+            y < 0 or y >= map.size() )
+            return;
+
+        char& cDst = steep ? (*dst)[x][y] : (*dst)[y][x];
+        const char& cSrc = steep ? src[x][y] : src[y][x];
+        cDst = cSrc;
+
+        if( cDst == '#' )
+            return;
+
+        error -= delta.y;
+        if( error < 0 )
+        {
+            y += step.y;
+            error += delta.x;
+        }
+    }
+}
+
 void print_map()
 {
     Actor& player = actors.front();
@@ -62,6 +113,15 @@ void print_map()
     Map toScreen( map.size() );
     std::string line( map[0].size(), ' ' );
     std::fill( toScreen.begin(), toScreen.end(), line );
+
+    static Vec visualLimits[] = { Vec(5,0), Vec(4,1), Vec(4,2), Vec(3,3),
+        Vec(2,4), Vec(1,4), Vec(0,5), Vec(-1,4), Vec(-2,4), Vec(-3,3),
+        Vec(-4,2), Vec(-4,1), Vec(-5,0), Vec(-4,-1), Vec(-4,-2), Vec(-3,-3),
+        Vec(-2,-4), Vec(-1,-4), Vec(0,-5), Vec(1,-4), Vec(2,-4), Vec(3,-3),
+        Vec(4,-2), Vec(4,-1) };
+
+    for( int i = 0; i < sizeof(visualLimits)/sizeof(visualLimits[0]); i++ )
+        show_bresenham_line( &toScreen, player.pos, player.pos + visualLimits[i], map );
 
     FOR_EACH( items, Item&  i, toScreen[i.pos.y][i.pos.x] = i.image );
     FOR_EACH( actors,  Actor& n, toScreen[n.pos.y][n.pos.x] = n.image );
