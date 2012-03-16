@@ -53,15 +53,20 @@ bool read_map()
 
 void print_map()
 {
+    Actor& player = actors.front();
+
     // Instead of painting the map, then items, then actors onto the  screen,
     // just copy the map to a buffer, paint everything to it,  and paint it to
     // the screen. This means that buffer can be put  anywhere on screen
     // without making sure everything's being  painted with the same offset.
-    Map toScreen = map;
+    Map toScreen( map.size() );
+    std::string line( map[0].size(), ' ' );
+    std::fill( toScreen.begin(), toScreen.end(), line );
+
     FOR_EACH( items, Item&  i, toScreen[i.pos.y][i.pos.x] = i.image );
     FOR_EACH( actors,  Actor& n, toScreen[n.pos.y][n.pos.x] = n.image );
 
-    Actor& player = actors.front();
+
     toScreen[player.pos.y][player.pos.x] = player.image;
 
     unsigned int row = 0;

@@ -26,3 +26,7 @@ Vec operator + ( const Vec& a, const Vec& b )
     return { a.x + b.x, a.y + b.y };
 }
 
+Vec operator - ( const Vec& a, const Vec& b )
+{
+    return { a.x - b.x, a.y - b.y };
+}

@@ -12,3 +12,4 @@ struct Vec
 bool operator == ( const Vec& a, const Vec& b );
 bool operator != ( const Vec& a, const Vec& b );
 Vec operator  +  ( const Vec& a, const Vec& b );
+Vec operator  -  ( const Vec& a, const Vec& b );
