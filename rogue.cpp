@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <ctime> // To produce seed for srand.
+#include <cmath> 
 
 #include <vector>
 #include <list>
@@ -90,8 +91,6 @@ void show_bresenham_line( Map* dst, Vec from, Vec to, const Map& src )
         const char& cSrc = steep ? src[x][y] : src[y][x];
         cDst = cSrc;
 
-        if( cDst == '#' )
-            return;
 
         error -= delta.y;
         if( error < 0 )
@@ -100,6 +99,27 @@ void show_bresenham_line( Map* dst, Vec from, Vec to, const Map& src )
             error += delta.x;
         }
     }
+}
+
+int sgn( int x )
+{
+    return x > 0 ? 1 : x < 0 ? -1 : 0;
+}
+
+void show_quadrant( Map* dst, Vec quad, Vec pos, const Map& src )
+{
+    for( int x = pos.x; x != pos.x + quad.x; x += sgn(quad.x) )
+    {
+        Vec destination( x, pos.y + quad.y );
+        show_bresenham_line( dst, pos, destination, src );
+    }
+    for( int y = pos.y; y != pos.y + quad.y; y += sgn(quad.y) )
+    {
+        Vec destination( pos.x + quad.x, y );
+        show_bresenham_line( dst, pos, destination, src );
+    }
+
+    show_bresenham_line( dst, pos, pos + quad, src );
 }
 
 void print_map()
@@ -114,14 +134,10 @@ void print_map()
     std::string line( map[0].size(), ' ' );
     std::fill( toScreen.begin(), toScreen.end(), line );
 
-    static Vec visualLimits[] = { Vec(5,0), Vec(4,1), Vec(4,2), Vec(3,3),
-        Vec(2,4), Vec(1,4), Vec(0,5), Vec(-1,4), Vec(-2,4), Vec(-3,3),
-        Vec(-4,2), Vec(-4,1), Vec(-5,0), Vec(-4,-1), Vec(-4,-2), Vec(-3,-3),
-        Vec(-2,-4), Vec(-1,-4), Vec(0,-5), Vec(1,-4), Vec(2,-4), Vec(3,-3),
-        Vec(4,-2), Vec(4,-1) };
-
-    for( int i = 0; i < sizeof(visualLimits)/sizeof(visualLimits[0]); i++ )
-        show_bresenham_line( &toScreen, player.pos, player.pos + visualLimits[i], map );
+    int r = 5;
+    Vec corners[] = { Vec(r,r), Vec(-r,r), Vec(-r,-r), Vec(r,-r) };
+    for( unsigned int i = 0; i < 4; i++ )
+        show_quadrant( &toScreen, corners[i], player.pos, map );
 
     FOR_EACH( items, Item&  i, toScreen[i.pos.y][i.pos.x] = i.image );
     FOR_EACH( actors,  Actor& n, toScreen[n.pos.y][n.pos.x] = n.image );
