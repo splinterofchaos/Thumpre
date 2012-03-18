@@ -62,6 +62,26 @@ void show( Map* dst, const Vec& where, const Map& src )
     (*dst)[where.y][where.x] = src[where.y][where.x];
 }
 
+bool has_adjacent_foor_tile( const Vec& place, const Map& src )
+{
+    bool safe = false;
+
+    int iStart = std::max( 0, place.x - 1 );
+    int iEnd   = std::min( (int)map[0].size(), place.x + 2 );
+
+    int jStart = std::max( 0, place.y - 1 );
+    int jEnd   = std::min( (int)map.size(), place.y + 2 );
+
+    for( ; not safe and iStart!=iEnd; iStart++ ) for( ; jStart!=jEnd; jStart++ )
+        if( src[jStart][iStart] == '.' )
+        {
+            safe = true;
+            break;
+        }
+
+    return safe;
+}
+
 void show_bresenham_line( Map* dst, Vec start, Vec v, const Map& src )
 {
     bool steep = std::abs( v.y ) > std::abs( v.x );
@@ -96,6 +116,9 @@ void show_bresenham_line( Map* dst, Vec start, Vec v, const Map& src )
         Vec mapPlace( x, y );
         if( steep )
             flip( mapPlace );
+
+        if( not has_adjacent_foor_tile(mapPlace, src) )
+            return;
 
         show( dst, mapPlace, src );
 
