@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <ctime> // To produce seed for srand.
+#include <cmath> 
 
 #include <vector>
 #include <list>
@@ -51,6 +52,72 @@ bool read_map()
     return true;
 }
 
+int sgn( int x )
+{
+    return x > 0 ? 1 : x < 0 ? -1 : 0;
+}
+
+void show( Map* dst, const Vec& where, const Map& src )
+{
+    (*dst)[where.y][where.x] = src[where.y][where.x];
+}
+
+void show_bresenham_line( Map* dst, Vec start, Vec v, const Map& src )
+{
+    bool steep = std::abs( v.y ) > std::abs( v.x );
+
+    struct {
+        void operator () ( Vec& a ) { std::swap( a.x, a.y ); }
+    } flip;
+
+    if( steep )
+    {
+        flip( v );
+        flip( start );
+    }
+    
+    // Specify which direction to move.
+    Vec step( sgn(v.x), sgn(v.y) );
+    // The absolute difference between the start and end of a ray.
+    Vec delta( std::abs(v.x), std::abs(v.y) );
+
+    int error = delta.x / 2;
+
+    int y = start.y;
+    for( int x = start.x; x != start.x + v.x; x += step.x )
+    {
+        Vec mapDims( map[0].size(), map.size() );
+        if( steep ) flip( mapDims );
+
+        if( x < 0 or x >= mapDims.x or
+            y < 0 or y >= mapDims.y )
+            return;
+
+        Vec mapPlace( x, y );
+        if( steep )
+            flip( mapPlace );
+
+        show( dst, mapPlace, src );
+
+        error -= delta.y;
+        if( error < 0 )
+        {
+            y += step.y;
+            error += delta.x;
+        }
+    }
+}
+
+void show_quadrant( Map* dst, const Vec& quad, const Vec& pos, const Map& src )
+{
+    for( int x = 0; x != quad.x; x += sgn(quad.x) )
+        show_bresenham_line( dst, pos, Vec(x, quad.y), src );
+    for( int y = 0; y != quad.y; y += sgn(quad.y) )
+        show_bresenham_line( dst, pos, Vec(quad.x, y), src );
+
+    show_bresenham_line( dst, pos, quad, src );
+}
+
 void print_map()
 {
     Actor& player = actors.front();
@@ -62,6 +129,11 @@ void print_map()
     Map toScreen( map.size() );
     std::string line( map[0].size(), ' ' );
     std::fill( toScreen.begin(), toScreen.end(), line );
+
+    int r = 5;
+    Vec corners[] = { Vec(r,r), Vec(-r,r), Vec(-r,-r), Vec(r,-r) };
+    for( unsigned int i = 0; i < 4; i++ )
+        show_quadrant( &toScreen, corners[i], player.pos, map );
 
     FOR_EACH( items, Item&  i, toScreen[i.pos.y][i.pos.x] = i.image );
     FOR_EACH( actors,  Actor& n, toScreen[n.pos.y][n.pos.x] = n.image );
