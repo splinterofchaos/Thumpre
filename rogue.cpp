@@ -52,45 +52,52 @@ bool read_map()
     return true;
 }
 
-void show_bresenham_line( Map* dst, Vec from, Vec to, const Map& src )
+int sgn( int x )
 {
-    bool steep = std::abs( to.y - from.y ) > std::abs( to.x - from.x );
+    return x > 0 ? 1 : x < 0 ? -1 : 0;
+}
+
+void show( Map* dst, const Vec& where, const Map& src )
+{
+    (*dst)[where.y][where.x] = src[where.y][where.x];
+}
+
+void show_bresenham_line( Map* dst, Vec start, Vec v, const Map& src )
+{
+    bool steep = std::abs( v.y ) > std::abs( v.x );
+
+    struct {
+        void operator () ( Vec& a ) { std::swap( a.x, a.y ); }
+    } flip;
 
     if( steep )
     {
-        std::swap( to.x, to.y );
-        std::swap( from.x, from.y );
+        flip( v );
+        flip( start );
     }
-
-    Vec delta = to - from; 
-    delta.x = std::abs( delta.x );
-    delta.y = std::abs( delta.y );
     
+    // Specify which direction to move.
+    Vec step( sgn(v.x), sgn(v.y) );
+    // The absolute difference between the start and end of a ray.
+    Vec delta( std::abs(v.x), std::abs(v.y) );
+
     int error = delta.x / 2;
 
-    Vec step( 0, 0 );
-
-    if( to.x > from.x )
-        step.x = 1;
-    else if( to.x < from.x )
-        step.x = -1;
-
-    if( to.y > from.y )
-        step.y = 1;
-    else if( to.y < from.y )
-        step.y = -1;
-
-    int y = from.y;
-    for( int x = from.x; x != to.x; x += step.x )
+    int y = start.y;
+    for( int x = start.x; x != start.x + v.x; x += step.x )
     {
-        if( x < 0 or x >= map[0].size() or
-            y < 0 or y >= map.size() )
+        Vec mapDims( map[0].size(), map.size() );
+        if( steep ) flip( mapDims );
+
+        if( x < 0 or x >= mapDims.x or
+            y < 0 or y >= mapDims.y )
             return;
 
-        char& cDst = steep ? (*dst)[x][y] : (*dst)[y][x];
-        const char& cSrc = steep ? src[x][y] : src[y][x];
-        cDst = cSrc;
+        Vec mapPlace( x, y );
+        if( steep )
+            flip( mapPlace );
 
+        show( dst, mapPlace, src );
 
         error -= delta.y;
         if( error < 0 )
@@ -101,25 +108,14 @@ void show_bresenham_line( Map* dst, Vec from, Vec to, const Map& src )
     }
 }
 
-int sgn( int x )
+void show_quadrant( Map* dst, const Vec& quad, const Vec& pos, const Map& src )
 {
-    return x > 0 ? 1 : x < 0 ? -1 : 0;
-}
+    for( int x = 0; x != quad.x; x += sgn(quad.x) )
+        show_bresenham_line( dst, pos, Vec(x, quad.y), src );
+    for( int y = 0; y != quad.y; y += sgn(quad.y) )
+        show_bresenham_line( dst, pos, Vec(quad.x, y), src );
 
-void show_quadrant( Map* dst, Vec quad, Vec pos, const Map& src )
-{
-    for( int x = pos.x; x != pos.x + quad.x; x += sgn(quad.x) )
-    {
-        Vec destination( x, pos.y + quad.y );
-        show_bresenham_line( dst, pos, destination, src );
-    }
-    for( int y = pos.y; y != pos.y + quad.y; y += sgn(quad.y) )
-    {
-        Vec destination( pos.x + quad.x, y );
-        show_bresenham_line( dst, pos, destination, src );
-    }
-
-    show_bresenham_line( dst, pos, pos + quad, src );
+    show_bresenham_line( dst, pos, quad, src );
 }
 
 void print_map()
