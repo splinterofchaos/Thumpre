@@ -26,6 +26,8 @@ rogue : rogue.cpp mapgen ${obj}
 .vec.o : Vec.*
 	${compile} -c Vec.cpp -o .vec.o
 
-mapgen : mapgen.cpp
-	${compile} mapgen.cpp -o mapgen
+mapgen : mapgen.cpp .tiles.o
+	${compile} .tiles.o mapgen.cpp -o mapgen
 
+.tiles.o : Tiles.*
+	${compile} -c Tiles.cpp -o .tiles.o

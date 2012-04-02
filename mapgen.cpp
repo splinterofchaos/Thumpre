@@ -9,61 +9,132 @@
 #include <vector>
 #include <algorithm>
 
+#include "Tiles.h"
+
 typedef const char* const literal;
+typedef unsigned int uint;
 
 struct Vec { int x; int y; };
 struct Rect { int left; int right; int up; int down; };
 
-typedef std::vector< std::string > Map;
-Map map;
-int width;
-int height;
+struct Range 
+{ 
+    int min, max; 
+
+    Range( int m, int M );
+    
+    uint size();
+};
+
+Range::Range( int m, int M )
+    : min(m), max(M)
+{
+}
+
+uint Range::size()
+{
+    return max - min;
+}
+
+struct Area 
+{ 
+    Range horizontal, vertical;
+    Area( const Range& h, const Range& v );
+    Area( int xMin, int xMax, int yMin, int yMax );
+
+    int operator () ();
+};
+
+Area::Area( const Range& h, const Range& v )
+    : horizontal(h), vertical(v)
+{
+}
+
+Area::Area( int xMin, int xMax, int yMin, int yMax )
+    : horizontal(xMin,xMax), vertical(yMin,yMax)
+{
+}
+
+int Area::operator() ()
+{
+    return horizontal.size() * vertical.size();
+}
+
+Tiles map;
+
+Range normalize( Range r )
+{
+    if( r.min > r.max )
+        std::swap( r.min, r.max );
+    return r;
+}
 
 int random( int till, int from=0 )
 {
     return rand() % (till-from) + from;
 }
 
+Range random_range( const Range& rng, const Range& size )
+{
+    auto r = [&](){ return random(rng.max+1, rng.min); };
+    Range rr /*random range*/ = normalize({ r(), r() });
+    
+    if( rr.size() < size.min or rr.size() > size.max )
+        return random_range( rng, size );
+    else
+        return rr;
+}
+
+Area random_area( Area area, Range size )
+{
+    Area a (
+        random_range( area.horizontal, size ),
+        random_range( area.vertical,   size )
+    );
+
+    if( a() < size.min or a() > size.max )
+        return random_area( area, size );
+    else
+        return a;
+}
+
 void make_map( char* argDimensions )
 {
-    sscanf( argDimensions, "%dx%d", &width, &height );
+    uint w, h;
+    sscanf( argDimensions, "%dx%d", &w, &h );
 
-    map.reserve( height );
-
-    int i = height;
-    while( i-- )
-        map.push_back( std::string(width, '#') );
+    map.reset( w, h );
 }
 
-bool add_room( const Rect& area )
+int difference( int a, int b )
 {
-    // Make sure no room exists in this area.
-    for( int y=area.up; y<area.down; y++ )
-        for( int x=area.left; x<area.right; x++ )
-            if( map[y][x] == '.' )
-                return false;
-
-    for( int y=area.up; y<area.down; y++ )
-        for( int x=area.left; x<area.right; x++ )
-            map[y][x] = '.';
-
-    return true;
+    return std::abs( b - a );
 }
 
-Rect random_rect( int minW, int minH )
+void dig_room( const Area& a, Tiles& m )
 {
-    Rect ret;
-    
-    ret.left = random( width  - minW - 1, 1 );
-    ret.up   = random( height - minH - 1, 1 );
+    for( uint x = a.horizontal.min; x < a.horizontal.max; x++ )
+        for( uint y = a.vertical.min; y<a.vertical.max; y++ )
+            m.get(x,y) = '.';
+}
 
-    ret.right = random( width  - 1, ret.left + minW );
-    ret.down  = random( height - 1, ret.up   + minH);
+void dig_splatter_pattern( const uint nRooms, Tiles& m )
+{
+    // The area we have to work with in m.
+    const int AREA = (m.width-2) * (m.height-2);
 
-    if( ret.left > ret.right or ret.up > ret.down )
-        printf( "ERROR" );
+    uint n = nRooms;
+    while( n-- )
+    {
+        Area bounds( {1, m.width-2}, {1, m.height-2} );
+        Range size( 3, AREA / nRooms );
+        dig_room( random_area(bounds, size), m );
+    }
+}
 
-    return ret;
+void dig( int n, Tiles& m )
+{
+    dig_splatter_pattern( n, m );
 }
 
 int main( int argc, char** argv )
@@ -82,8 +153,12 @@ int main( int argc, char** argv )
     // For now, just create a room at a random position.
     srand(time(0));
 
-    add_room( random_rect(3,3) );
+    dig( 10, map );
 
-    for( int y=0; y < height; y++ )
-        printf( "%s\n", map[y].c_str() );
+    for( int y=0; y < map.height; y++ )
+    {
+        for( int x=0; x < map.width; x++ )
+            printf( "%c", map.get(x, y) );
+        printf( "\n" );
+    }
 }
