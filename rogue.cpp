@@ -117,10 +117,10 @@ void show_bresenham_line( Map* dst, Vec start, Vec v, const Map& src )
         if( steep )
             flip( mapPlace );
 
-        if( not has_adjacent_foor_tile(mapPlace, src) )
-            return;
-
         show( dst, mapPlace, src );
+
+        if( src[mapPlace.y][mapPlace.x] == '#' )
+            return;
 
         error -= delta.y;
         if( error < 0 )
