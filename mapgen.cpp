@@ -10,12 +10,10 @@
 #include <algorithm>
 
 #include "Tiles.h"
+#include "Vec.h"
 
 typedef const char* const literal;
 typedef unsigned int uint;
-
-struct Vec { int x; int y; };
-struct Rect { int left; int right; int up; int down; };
 
 struct Range 
 { 
@@ -43,6 +41,8 @@ struct Area
     Area( int xMin, int xMax, int yMin, int yMax );
 
     int operator () ();
+
+    Vec center();
 };
 
 Area::Area( const Range& h, const Range& v )
@@ -60,6 +60,14 @@ int Area::operator() ()
     return horizontal.size() * vertical.size();
 }
 
+Vec Area::center()
+{
+    return Vec (
+        (horizontal.max + horizontal.min) / 2,
+        (vertical  .max + vertical  .min) / 2
+    );
+}
+
 Tiles map;
 
 Range normalize( Range r )
@@ -71,6 +79,8 @@ Range normalize( Range r )
 
 int random( int till, int from=0 )
 {
+    if( till - from <= 0 )
+        return 0;
     return rand() % (till-from) + from;
 }
 
@@ -111,6 +121,19 @@ int difference( int a, int b )
     return std::abs( b - a );
 }
 
+void dig_hallway( Vec a, Vec b, Tiles& m )
+{
+    auto sgn = []( int x ){ return x>0? 1 : x<0? -1 : 0; };
+
+    Vec step( sgn(b.x-a.x), sgn(b.y-a.y) );
+    printf( "x = %d\ny = %d\n\n", step );
+
+    for( uint x = a.x; x != b.x; x += step.x )
+        m.get( x, a.y ) = '.';
+    for( uint y = a.y; y != b.y; y += step.y )
+        m.get( b.x, y ) = '.';
+}
+
 void dig_room( const Area& a, Tiles& m )
 {
     for( uint x = a.horizontal.min; x < a.horizontal.max; x++ )
@@ -123,12 +146,27 @@ void dig_splatter_pattern( const uint nRooms, Tiles& m )
     // The area we have to work with in m.
     const int AREA = (m.width-2) * (m.height-2);
 
+    // Keep track of the center of each room we create.
+    std::vector< Vec > centers;
+    centers.reserve( nRooms );
+
     uint n = nRooms;
     while( n-- )
     {
         Area bounds( {1, m.width-2}, {1, m.height-2} );
         Range size( 3, AREA / nRooms );
-        dig_room( random_area(bounds, size), m );
+        Area area = random_area( bounds, size );
+        
+        dig_room( area, m );
+
+        // Dig hallways between rooms so that each room can (more likely) be accessed.
+        centers.push_back( area.center() );
+        if( centers.size() > 2 )
+            dig_hallway ( 
+                centers.back(), 
+                centers[ random(centers.size() - 2) ],
+                m
+            );
     }
 }
 
