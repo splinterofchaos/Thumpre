@@ -10,10 +10,13 @@ struct Actor
     Inventory inventory;
 
     int hp;
+    int speed;
+
+    int cooldown; // Time until next move.
+
     char image;
 
     bool playerControlled;
 
     Actor( Vec pos, char image );
 };
-

@@ -217,6 +217,7 @@ int main( int argc, char** argv )
     items.push_back( Item(random_position(), "Broom Handle", '/', Item::WOOD, Item::ROD) );
     items.push_back( Item(random_position(), "Horse Hair",   '"', Item::HAIR, Item::WIG) );
 
+    unsigned int time = 0;
 
     while( not quit )
     {
@@ -241,8 +242,24 @@ int main( int argc, char** argv )
         refresh(); 
 
         move_player( &actors[0] );
-    }
 
+        while( true )
+        {
+            auto quickest = std::min_element (
+                actors.begin(), actors.end(),
+                [=]( const Actor& a, const Actor& b ) {
+                    return a.cooldown < b.cooldown;
+                }
+            );
+
+            if( quickest == actors.begin() )
+                break;
+
+            time = quickest->cooldown;
+            walk( &*quickest, Vec(1,0) );
+            
+        } 
+    }
 
     endwin();
 
