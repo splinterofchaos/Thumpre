@@ -9,10 +9,14 @@ all : rogue mapgen
 
 compile = ${CXX} ${CFLAGS}
 
-obj = .world.o .vec.o .item.o .actor.o
+robj = .world.o .vec.o .item.o .actor.o
+mobj = .vec.o .tiles.o
 
-rogue : rogue.cpp mapgen ${obj}
-	${compile} rogue.cpp -o rogue ${LDFLAGS} ${obj}
+rogue : rogue.cpp mapgen ${robj}
+	${compile} rogue.cpp -o rogue ${LDFLAGS} ${robj}
+
+mapgen : mapgen.cpp ${mobj}
+	${compile} mapgen.cpp -o mapgen ${mobj}
 	
 .world.o : World.* .actor.o
 	${compile} -c World.cpp -o .world.o
@@ -25,9 +29,6 @@ rogue : rogue.cpp mapgen ${obj}
 
 .vec.o : Vec.*
 	${compile} -c Vec.cpp -o .vec.o
-
-mapgen : mapgen.cpp .tiles.o
-	${compile} .tiles.o mapgen.cpp -o mapgen
 
 .tiles.o : Tiles.*
 	${compile} -c Tiles.cpp -o .tiles.o
