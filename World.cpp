@@ -27,9 +27,9 @@ Inventory::iterator inp_inventory_item( Inventory& inventory )
     logger.push_back( prompt );
     print_log();
 
-    int c = getch() - 'a';
+    uint c = getch() - 'a';
 
-    if( c >= 0 and c < inventory.size() )
+    if( c < inventory.size() )
     {
         Inventory::iterator ret = inventory.begin() + c;
         return ret;
@@ -182,8 +182,10 @@ bool walk( Actor* a, Vec dir )
 {
     Vec newPos = a->pos + dir;
 
-    bool inBounds = newPos.x > 0 and newPos.y > 0;
-    inBounds &= newPos.y < map.size() and newPos.x < map[newPos.y].size();
+    bool inBounds =
+        newPos.x > 0 and newPos.y > 0
+        and ( (uint)newPos.y < map.size() 
+            and (uint)newPos.x < map[newPos.y].size() );
 
     ActorList::iterator actorHere = actor_at( newPos );
 

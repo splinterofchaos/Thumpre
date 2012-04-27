@@ -17,7 +17,7 @@ typedef unsigned int uint;
 
 struct Range 
 { 
-    int min, max; 
+    uint min, max; 
 
     Range( int m, int M );
     
@@ -38,9 +38,9 @@ struct Area
 { 
     Range horizontal, vertical;
     Area( const Range& h, const Range& v );
-    Area( int xMin, int xMax, int yMin, int yMax );
+    Area( uint xMin, uint xMax, uint yMin, uint yMax );
 
-    int operator () ();
+    uint operator () ();
 
     Vec center();
 };
@@ -50,12 +50,12 @@ Area::Area( const Range& h, const Range& v )
 {
 }
 
-Area::Area( int xMin, int xMax, int yMin, int yMax )
+Area::Area( uint xMin, uint xMax, uint yMin, uint yMax )
     : horizontal(xMin,xMax), vertical(yMin,yMax)
 {
 }
 
-int Area::operator() ()
+uint Area::operator() ()
 {
     return horizontal.size() * vertical.size();
 }
@@ -126,9 +126,9 @@ void dig_hallway( Vec a, Vec b, Tiles& m )
     auto sgn = []( int x ){ return x>0? 1 : x<0? -1 : 0; };
 
     Vec step( sgn(b.x-a.x), sgn(b.y-a.y) );
-    for( uint x = a.x; x != b.x; x += step.x )
+    for( uint x = a.x; x != (uint)b.x; x += step.x )
         m.get( x, a.y ) = '.';
-    for( uint y = a.y; y != b.y; y += step.y )
+    for( uint y = a.y; y != (uint)b.y; y += step.y )
         m.get( b.x, y ) = '.';
 }
 
@@ -191,9 +191,9 @@ int main( int argc, char** argv )
 
     dig( 10, map );
 
-    for( int y=0; y < map.height; y++ )
+    for( uint y=0; y < map.height; y++ )
     {
-        for( int x=0; x < map.width; x++ )
+        for( uint x=0; x < map.width; x++ )
             printf( "%c", map.get(x, y) );
         printf( "\n" );
     }
