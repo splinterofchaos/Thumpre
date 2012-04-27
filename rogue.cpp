@@ -155,7 +155,7 @@ void print_map()
 
     int r = 5;
     Vec corners[] = { Vec(r,r), Vec(-r,r), Vec(-r,-r), Vec(r,-r) };
-    for( unsigned int i = 0; i < 4; i++ )
+    for( uint i = 0; i < 4; i++ )
         show_quadrant( &toScreen, corners[i], player.pos, map );
 
     FOR_EACH( items, Item&  i, toScreen[i.pos.y][i.pos.x] = i.image );
@@ -164,7 +164,7 @@ void print_map()
 
     toScreen[player.pos.y][player.pos.x] = player.image;
 
-    unsigned int row = 0;
+    uint row = 0;
     FOR_EACH ( 
         toScreen, std::string& line, 
         mvprintw( mapPos.y + row++, mapPos.x, line.c_str() )
@@ -173,7 +173,7 @@ void print_map()
 
 void print_log()
 {
-    unsigned int row = 0;
+    uint row = 0;
     FOR_EACH ( 
         logger, std::string& msg, 
         mvprintw( logPos.y + row++, logPos.x, msg.c_str() ) 
@@ -186,18 +186,22 @@ void print_inventory()
     // Print the inventory.
     mvprintw( inventoryPos.y++, inventoryPos.x, "You have:" );
 
-    unsigned int y = 0;
-    unsigned int x = inventoryPos.x + 2;
+    uint x = inventoryPos.x + 2;
     if( actors[0].inventory.size() )
+    {
+        uint y = 0;
         FOR_EACH ( 
             actors.front().inventory, Item& i, 
             mvprintw( inventoryPos.y + y++, x, "%c - %s", 'a'+y, i.name.c_str() ) 
         );
+    }
     else
-        mvprintw( inventoryPos.y + y, inventoryPos.x + 2, "Nothing." );
+    {
+        mvprintw( inventoryPos.y, x, "Nothing." );
+    }
 }
 
-int main( int argc, char** argv )
+int main()
 {
     initscr();
     cbreak();
@@ -242,6 +246,7 @@ int main( int argc, char** argv )
         refresh(); 
 
         move_player( &actors[0] );
+        actors.front().cooldown += 1;
 
         while( true )
         {
@@ -255,9 +260,8 @@ int main( int argc, char** argv )
             if( quickest == actors.begin() )
                 break;
 
-            time = quickest->cooldown;
             walk( &*quickest, Vec(1,0) );
-            
+            quickest->cooldown += 1;
         } 
     }
 
