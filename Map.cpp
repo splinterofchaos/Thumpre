@@ -9,6 +9,11 @@ Map::Map()
     dims = Vec( 0, 0 );
 }
 
+Map::Map( Vec dims )
+    : tiles( dims.y, Row(dims.x, ' ') )
+{
+}
+
 Map::~Map()
 {
 }
@@ -33,6 +38,11 @@ void Map::add_row( Row r )
     tiles.push_back( r );
 }
 
+Map::Row& Map::row( unsigned int r )
+{
+    return tiles[r];
+}
+
 char& Map::get( const Vec& v )
 {
     return const_cast<char&>(
@@ -43,7 +53,7 @@ char& Map::get( const Vec& v )
 const char& Map::get( const Vec& v ) const
 {
     if( flipped )
-        return tiles[ v.y ][ v.x ];
-    else
         return tiles[ v.x ][ v.y ];
+    else
+        return tiles[ v.y ][ v.x ];
 }

@@ -28,12 +28,11 @@ Vec random_position()
     while( true )
     {
         Vec p( 0, 0 );
-        p.y = std::rand() % map.size();
-        p.x = std::rand() % map[0].size();
+        p.x = std::rand() % map.dims.x;
+        p.y = std::rand() % map.dims.y;
 
-        if( item_at(p)  == items.end()  and 
-            actor_at(p) == actors.end()  and
-            map[p.y][p.x] != '#' )
+        if( actor_at(p) == actors.end() 
+            and map.get (p) != '#' )
             return p;
     }
 }
@@ -46,7 +45,7 @@ bool read_map()
 
     char row[ 200 ];
     while( fscanf(mapgen, "%s", row) != EOF )
-        map.push_back( row );
+        map.add_row( row );
     pclose( mapgen );
 
     return true;
@@ -59,25 +58,33 @@ int sgn( int x )
 
 void show( Map* dst, const Vec& where, const Map& src )
 {
-    (*dst)[where.y][where.x] = src[where.y][where.x];
+    dst->get( where ) = src.get( where );
 }
 
 bool has_adjacent_foor_tile( const Vec& place, const Map& src )
 {
     bool safe = false;
 
-    int iStart = std::max( 0, place.x - 1 );
-    int iEnd   = std::min( (int)map[0].size(), place.x + 2 );
+    Vec pos (
+        std::max( 0, place.x - 1 ),
+        std::max( 0, place.y - 1 )
+    );
 
-    int jStart = std::max( 0, place.y - 1 );
-    int jEnd   = std::min( (int)map.size(), place.y + 2 );
+    Vec end (
+        std::min( (int)map.dims.y, place.x + 2 ),
+        std::min( (int)map.dims.x, place.y + 2 )
+    );
 
-    for( ; not safe and iStart!=iEnd; iStart++ ) for( ; jStart!=jEnd; jStart++ )
-        if( src[jStart][iStart] == '.' )
-        {
-            safe = true;
-            break;
-        }
+    Vec offset( 0, 0 );
+
+    for( ; not safe and offset.x+pos.x != end.x; offset.x++ ) 
+        for( ; offset.y+pos.y != end.y; offset.y++ )
+            if( not (offset.x == 1 and offset.y == offset.x ) 
+                and src.get( pos+offset ) == '.' )
+            {
+                safe = true;
+                break;
+            }
 
     return safe;
 }
@@ -106,7 +113,7 @@ void show_bresenham_line( Map* dst, Vec start, Vec v, const Map& src )
     int y = start.y;
     for( int x = start.x; x != start.x + v.x; x += step.x )
     {
-        Vec mapDims( map[0].size(), map.size() );
+        Vec mapDims( map.dims.y, map.dims.x );
         if( steep ) flip( mapDims );
 
         if( x < 0 or x >= mapDims.x or
@@ -119,7 +126,7 @@ void show_bresenham_line( Map* dst, Vec start, Vec v, const Map& src )
 
         show( dst, mapPlace, src );
 
-        if( src[mapPlace.y][mapPlace.x] == '#' )
+        if( src.get(mapPlace) == '#' )
             return;
 
         error -= delta.y;
@@ -149,26 +156,20 @@ void print_map()
     // just copy the map to a buffer, paint everything to it,  and paint it to
     // the screen. This means that buffer can be put  anywhere on screen
     // without making sure everything's being  painted with the same offset.
-    Map toScreen( map.size() );
-    std::string line( map[0].size(), ' ' );
-    std::fill( toScreen.begin(), toScreen.end(), line );
+    Map toScreen( map.dims );
 
     int r = 5;
     Vec corners[] = { Vec(r,r), Vec(-r,r), Vec(-r,-r), Vec(r,-r) };
     for( uint i = 0; i < 4; i++ )
         show_quadrant( &toScreen, corners[i], player.pos, map );
 
-    FOR_EACH( items, Item&  i, toScreen[i.pos.y][i.pos.x] = i.image );
-    FOR_EACH( actors,  Actor& n, toScreen[n.pos.y][n.pos.x] = n.image );
+    FOR_EACH( items,  Item&  i, toScreen.get(i.pos) = i.image );
+    FOR_EACH( actors, Actor& n, toScreen.get(n.pos) = n.image );
 
+    toScreen.get( player.pos ) = player.image;
 
-    toScreen[player.pos.y][player.pos.x] = player.image;
-
-    uint row = 0;
-    FOR_EACH ( 
-        toScreen, std::string& line, 
-        mvprintw( mapPos.y + row++, mapPos.x, line.c_str() )
-    );
+    for( uint row = 0; row < (uint)map.dims.y; row++ )
+        mvprintw( mapPos.y + row, mapPos.x, map.row(row).c_str() );
 }
 
 void print_log()
@@ -225,7 +226,7 @@ int main()
     while( not quit )
     {
         const int MAP_TOP = 5;
-        const int MAP_BOTTOM = MAP_TOP + map.size();
+        const int MAP_BOTTOM = MAP_TOP + map.dims.x;
 
         logPos = Vec( 2, 1 );
         inventoryPos = Vec( 4, MAP_BOTTOM + 2 );
