@@ -4,12 +4,12 @@
 #include "Vec.h"
 #include "Item.h"
 #include "Actor.h"
+#include "Map.h"
 
 #include <vector>
 #include <list>
 #include <string>
 
-typedef std::vector< std::string > Map;
 typedef std::list< std::string >   Logger;
 typedef std::vector< Actor > ActorList;
 
