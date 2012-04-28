@@ -56,11 +56,6 @@ int sgn( int x )
     return x > 0 ? 1 : x < 0 ? -1 : 0;
 }
 
-void show( Map* dst, const Vec& where, const Map& src )
-{
-    dst->get( where ) = src.get( where );
-}
-
 bool has_adjacent_foor_tile( const Vec& place, const Map& src )
 {
     bool safe = false;
@@ -89,7 +84,7 @@ bool has_adjacent_foor_tile( const Vec& place, const Map& src )
     return safe;
 }
 
-void show_bresenham_line( Map* dst, Vec start, Vec v, const Map& src )
+void show_bresenham_line( Vec start, Vec v )
 {
     bool steep = std::abs( v.y ) > std::abs( v.x );
 
@@ -124,9 +119,8 @@ void show_bresenham_line( Map* dst, Vec start, Vec v, const Map& src )
         if( steep )
             flip( mapPlace );
 
-        show( dst, mapPlace, src );
-
-        if( src.get(mapPlace) == '#' )
+        map.visible( mapPlace, true );
+        if( map.get(mapPlace) == '#' )
             return;
 
         error -= delta.y;
@@ -138,38 +132,53 @@ void show_bresenham_line( Map* dst, Vec start, Vec v, const Map& src )
     }
 }
 
-void show_quadrant( Map* dst, const Vec& quad, const Vec& pos, const Map& src )
+void show_quadrant( const Vec& quad, const Vec& pos )
 {
     for( int x = 0; x != quad.x; x += sgn(quad.x) )
-        show_bresenham_line( dst, pos, Vec(x, quad.y), src );
+        show_bresenham_line( pos, Vec(x, quad.y) );
     for( int y = 0; y != quad.y; y += sgn(quad.y) )
-        show_bresenham_line( dst, pos, Vec(quad.x, y), src );
+        show_bresenham_line( pos, Vec(quad.x, y) );
 
-    show_bresenham_line( dst, pos, quad, src );
+    show_bresenham_line( pos, quad );
+}
+
+template< typename E >
+void print_element( const E& element )
+{
+    if( map.visible(element.pos) )
+    {
+        auto p = element.pos + mapPos;
+        mvaddch( p.y, p.x, element.image ); 
+    }
+}
+
+void print_tile( Vec p, char c )
+{
+    p = p + mapPos;
+    mvaddch( p.y, p.x, c );
 }
 
 void print_map()
 {
     Actor& player = actors.front();
 
-    // Instead of painting the map, then items, then actors onto the  screen,
-    // just copy the map to a buffer, paint everything to it,  and paint it to
-    // the screen. This means that buffer can be put  anywhere on screen
-    // without making sure everything's being  painted with the same offset.
-    Map toScreen( map.dims );
+    //for( Vec p(0,0); p.y < map.dims.y; p.y++ )
 
     int r = 5;
     Vec corners[] = { Vec(r,r), Vec(-r,r), Vec(-r,-r), Vec(r,-r) };
     for( uint i = 0; i < 4; i++ )
-        show_quadrant( &toScreen, corners[i], player.pos, map );
+        show_quadrant( corners[i], player.pos );
 
-    FOR_EACH( items,  Item&  i, toScreen.get(i.pos) = i.image );
-    FOR_EACH( actors, Actor& n, toScreen.get(n.pos) = n.image );
+    for( Vec p(0,0); p.y < map.dims.y; p.y++ )
+        for( p.x = 0 ; p.x < map.dims.x; p.x++ )
+        {
+            auto tile = map.tile( p );
+            if( tile.visible )
+                print_tile( p, tile.c );
+        }
 
-    toScreen.get( player.pos ) = player.image;
-
-    for( uint row = 0; row < (uint)map.dims.y; row++ )
-        mvprintw( mapPos.y + row, mapPos.x, map.row(row).c_str() );
+    std::for_each( items.begin(),  items .end(), print_element<Item > );
+    std::for_each( actors.begin(), actors.end(), print_element<Actor> );
 }
 
 void print_log()

@@ -10,7 +10,7 @@ Map::Map()
 }
 
 Map::Map( Vec dims )
-    : tiles( dims.y, Row(dims.x, ' ') )
+    : tiles( dims.y, Row(dims.x, {' ', false}) )
 {
 }
 
@@ -29,31 +29,64 @@ void Map::clear()
     tiles.clear();
 }
 
-void Map::add_row( Row r )
+void Map::add_row( const std::string& rowstr )
 {
     if( not dims.x )
-        dims.x = r.size();
+        dims.x = rowstr.size();
     dims.y++;
 
-    tiles.push_back( r );
+    Row row; row.reserve( dims.x );
+    std::for_each ( 
+        rowstr.begin(), rowstr.end(), 
+        [&](const char c){ row.push_back({c,false}); }
+    );
+
+    tiles.push_back( row );
 }
 
-Map::Row& Map::row( unsigned int r )
+std::string Map::row( unsigned int r ) const
 {
-    return tiles[r];
+    std::string s; s.reserve( dims.x );
+    auto row = tiles[r];
+    std::for_each (
+        row.begin(), row.end(),
+        [&](const Tile& t){ s.push_back(t.c); }
+    );
+
+    return s;
 }
 
-char& Map::get( const Vec& v )
+Map::Tile& Map::tile( const Vec& v )
 {
-    return const_cast<char&>(
-        static_cast<const Map*>(this)->get(v)
+    return const_cast<Tile&>(
+        static_cast<const Map*>(this)->tile(v)
     );
 }
 
-const char& Map::get( const Vec& v ) const
+const Map::Tile& Map::tile( const Vec& v ) const
 {
     if( flipped )
         return tiles[ v.x ][ v.y ];
     else
         return tiles[ v.y ][ v.x ];
+}
+
+bool Map::visible( const Vec& v ) const
+{
+    return tile( v ).visible;
+}
+
+void Map::visible( const Vec& v, bool canSeeIt )
+{
+    tile( v ).visible = canSeeIt;
+}
+
+char& Map::get( const Vec& v )
+{
+    return tile( v ).c;
+}
+
+const char& Map::get( const Vec& v ) const
+{
+    return tile( v ).c;
 }

@@ -6,12 +6,18 @@
 
 struct Map
 {
-    typedef std::string Row;
-    typedef std::vector<Row> Tiles;
+    struct Tile
+    {
+        char c;
+        bool visible;
+    };
+
+    typedef std::vector<Tile> Row;
+    typedef std::vector<Row>  Grid;
 
   private:
     bool flipped;
-    Tiles tiles;
+    Grid tiles;
 
   public:
     Vec dims;
@@ -23,10 +29,14 @@ struct Map
     void flip();
 
     void clear();
-    void add_row( Row );
+    void add_row( const std::string& );
 
-    Row& row( unsigned int );
-    
-    char& get( const Vec& );
+    std::string row( unsigned int ) const;
+
+    Tile&       tile( const Vec& );
+    const Tile& tile( const Vec& ) const;
+    bool visible( const Vec& ) const;
+    void visible( const Vec&, bool );
+    char&       get( const Vec& );
     const char& get( const Vec& ) const;
 };
