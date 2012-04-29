@@ -231,6 +231,7 @@ int main()
     items.push_back( Item(random_position(), "Broom Handle", '/', Item::WOOD, Item::ROD) );
     items.push_back( Item(random_position(), "Horse Hair",   '"', Item::HAIR, Item::WIG) );
 
+    unsigned int time = 0;
 
     while( not quit )
     {
@@ -254,9 +255,24 @@ int main()
 
         refresh(); 
 
-        move_player( &actors[0] );
-    }
+        auto quickest = std::min_element (
+            actors.begin(), actors.end(),
+            [=]( const Actor& a, const Actor& b ) {
+                return a.cooldown < b.cooldown;
+            }
+        );
 
+        if( quickest->playerControlled )
+        {
+            move_player( *quickest );
+            quickest->cooldown += 1;
+        }
+        else
+        {
+            walk( *quickest, Vec(1,0) );
+            quickest->cooldown += 1;
+        } 
+    }
 
     endwin();
 

@@ -21,8 +21,9 @@ extern Logger logger;
 extern bool quit;
 extern ActorList actors;
 
-bool walk( Actor* a, Vec dir );
+void move_player( Actor& );
+bool walk( Actor& a, Vec dir );
+
 Inventory::iterator item_at( Vec pos );
 ActorList::iterator actor_at( Vec pos );
 void transfer( Inventory* to, Inventory* from, Inventory::iterator what );
-void move_player( Actor* );
