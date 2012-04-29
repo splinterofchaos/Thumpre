@@ -39,7 +39,7 @@ Vec random_position()
 
 bool read_map()
 {
-    FILE* mapgen = popen( "./mapgen 20x15", "r" ); 
+    FILE* mapgen = popen( "./mapgen 25x15", "r" ); 
     if( not mapgen )
         return false;
 
@@ -74,8 +74,8 @@ bool has_adjacent_foor_tile( const Vec& place, const Map& src )
 
     for( ; not safe and offset.x+pos.x != end.x; offset.x++ ) 
         for( ; offset.y+pos.y != end.y; offset.y++ )
-            if( not (offset.x == 1 and offset.y == offset.x ) 
-                and src.get( pos+offset ) == '.' )
+            if( not (offset.x == 1 and offset.y == offset.x) 
+                and src.get(pos+offset) == '.' )
             {
                 safe = true;
                 break;
@@ -108,7 +108,7 @@ void show_bresenham_line( Vec start, Vec v )
     int y = start.y;
     for( int x = start.x; x != start.x + v.x; x += step.x )
     {
-        Vec mapDims( map.dims.y, map.dims.x );
+        Vec mapDims( map.dims );
         if( steep ) flip( mapDims );
 
         if( x < 0 or x >= mapDims.x or
@@ -160,9 +160,9 @@ void print_tile( Vec p, char c )
 
 void print_map()
 {
-    Actor& player = actors.front();
-
-    //for( Vec p(0,0); p.y < map.dims.y; p.y++ )
+    for( Vec p(0,0); p.y < map.dims.y; p.y++ )
+        for( p.x = 0 ; p.x < map.dims.x; p.x++ )
+            map.visible( p, false );
 
     int r = 5;
     Vec corners[] = { Vec(r,r), Vec(-r,r), Vec(-r,-r), Vec(r,-r) };

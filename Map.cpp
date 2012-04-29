@@ -9,8 +9,8 @@ Map::Map()
     dims = Vec( 0, 0 );
 }
 
-Map::Map( Vec dims )
-    : tiles( dims.y, Row(dims.x, {' ', false}) )
+Map::Map( Vec dim )
+    : tiles( dim.y, Row(dim.x, {' ', false}) ), dims(dim)
 {
 }
 
