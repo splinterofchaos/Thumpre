@@ -130,14 +130,14 @@ void transfer( Inventory* to, Inventory* from, Inventory::iterator what )
 Inventory::iterator item_at( Vec pos )
 {
     return std::find_if ( 
-        items.begin(), items.end(), [&](const Item& i) { return i.pos == pos; }
+        items.begin(), items.end(), [=](const Item& i) { return i.pos == pos; }
     );
 }
 
 ActorList::iterator actor_at( Vec pos )
 {
     return std::find_if ( 
-        actors.begin(), actors.end(), [&](const Actor& n) { return n.pos == pos; }
+        actors.begin(), actors.end(), [=](const Actor& n) { return n.pos == pos; }
     );
 }
 
@@ -184,8 +184,10 @@ bool walk( Actor* a, Vec dir )
 
     bool inBounds =
         newPos.x > 0 and newPos.y > 0
-        and ( (uint)newPos.y < map.size() 
-            and (uint)newPos.x < map[newPos.y].size() );
+        and ( (uint)newPos.y < map.dims.y 
+            and (uint)newPos.x < map.dims.x );
+    if( not inBounds )
+        return false;
 
     ActorList::iterator actorHere = actor_at( newPos );
 
@@ -212,7 +214,7 @@ bool walk( Actor* a, Vec dir )
         if( actorHere->hp < 0 )
             actors.erase( actorHere );
     }
-    else if( inBounds and map[newPos.y][newPos.x] != '#' )
+    else if( map.get(newPos) != '#' )
     {
         a->pos = newPos;
     }
