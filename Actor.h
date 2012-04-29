@@ -12,7 +12,7 @@ struct Actor
     int hp;
     int speed;
 
-    int cooldown; // Time until next move.
+    float cooldown; // Time until next move.
 
     char image;
 

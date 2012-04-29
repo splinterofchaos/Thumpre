@@ -134,11 +134,9 @@ bool walk( Actor& a, Vec dir )
 {
     Vec newPos = a.pos + dir;
 
-    bool inBounds =
-        newPos.x > 0 and newPos.y > 0
-        and ( (uint)newPos.y < map.dims.y 
-            and (uint)newPos.x < map.dims.x );
-    if( not inBounds )
+    if( newPos.x < 0 or newPos.y < 0
+        or (uint)newPos.x > map.dims.y
+        or (uint)newPos.y > map.dims.y )
         return false;
 
     ActorList::iterator actorHere = actor_at( newPos );
@@ -174,6 +172,8 @@ bool walk( Actor& a, Vec dir )
     {
         return false;
     }
+
+    a.cooldown += float(25) / a.speed;
 
     return true;
 }

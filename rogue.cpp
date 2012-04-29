@@ -265,13 +265,24 @@ int main()
         if( quickest->playerControlled )
         {
             move_player( *quickest );
-            quickest->cooldown += 1;
         }
         else
         {
-            walk( *quickest, Vec(1,0) );
-            quickest->cooldown += 1;
-        } 
+            if( map.visible(quickest->pos) )
+            {
+                Vec towardsPlayer = actors.front().pos - quickest->pos;
+
+                if( rogue_length(towardsPlayer) > 1 )
+                    if( std::abs(towardsPlayer.y) > std::abs(towardsPlayer.x) )
+                        towardsPlayer = { 0, towardsPlayer.y };
+                    else
+                        towardsPlayer = { towardsPlayer.x, 0 };
+
+                walk( *quickest, towardsPlayer );
+            } 
+            else
+                quickest->cooldown += 1;
+        }
     }
 
     endwin();
