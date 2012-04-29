@@ -7,6 +7,13 @@ struct Vec
 
     Vec();
     Vec( int x, int y );
+
+    template< typename FType >
+    Vec( FType f, Vec v )
+    {
+        x = f( v.x );
+        y = f( v.y );
+    }
 };
 
 bool operator == ( const Vec& a, const Vec& b );

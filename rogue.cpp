@@ -99,9 +99,9 @@ void show_bresenham_line( Vec start, Vec v )
     }
     
     // Specify which direction to move.
-    Vec step( sgn(v.x), sgn(v.y) );
+    Vec step( sgn, v );
     // The absolute difference between the start and end of a ray.
-    Vec delta( std::abs(v.x), std::abs(v.y) );
+    Vec delta( std::abs<int>, v );
 
     int error = delta.x / 2;
 

@@ -64,7 +64,7 @@ bool combine( Inventory* inv )
 
     if( first->type == Item::ROD and second->type == Item::WIG )
     {
-        Item product( Vec(0,0), "Wooden Broom", '/', Item::WOOD, Item::ROD );
+        Item product( {0,0}, "Wooden Broom", '/', Item::WOOD, Item::ROD );
         inv->erase( first );
         inv->erase( second );
         inv->push_back( product );
