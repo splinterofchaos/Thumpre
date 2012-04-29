@@ -245,22 +245,21 @@ int main()
 
         refresh(); 
 
-        move_player( &actors[0] );
-        actors.front().cooldown += 1;
+        auto quickest = std::min_element (
+            actors.begin(), actors.end(),
+            [=]( const Actor& a, const Actor& b ) {
+                return a.cooldown < b.cooldown;
+            }
+        );
 
-        while( true )
+        if( quickest->playerControlled )
         {
-            auto quickest = std::min_element (
-                actors.begin(), actors.end(),
-                [=]( const Actor& a, const Actor& b ) {
-                    return a.cooldown < b.cooldown;
-                }
-            );
-
-            if( quickest == actors.begin() )
-                break;
-
-            walk( &*quickest, Vec(1,0) );
+            move_player( *quickest );
+            quickest->cooldown += 1;
+        }
+        else
+        {
+            walk( *quickest, Vec(1,0) );
             quickest->cooldown += 1;
         } 
     }
