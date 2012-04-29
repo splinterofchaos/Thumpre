@@ -13,6 +13,16 @@
 #include <algorithm>
 
 #include <ncurses.h>
+#include <signal.h>
+
+// After initscr, if the OS sends us a segfault or termination signal, we need
+// to call endwin to avoid screwing up the user's terminal. 
+void end_window_and_terminate( int sig, siginfo_t* info, void* arg )
+{
+    endwin();
+    perror( "Signal to terminate recieved" );
+    exit(1);
+}
 
 // This just makes using std::for_each a little easier to write/read.
 #define RNG( container ) container.begin(), container.end()
@@ -220,6 +230,17 @@ int main()
     keypad(stdscr, TRUE);
 
     std::srand( std::time(0) );
+    int* i;
+
+    {
+        struct sigaction sact;
+        memset( &sact, 0, sizeof sact );
+        sact.sa_sigaction = end_window_and_terminate;
+        sact.sa_flags     = SA_SIGINFO;
+        sigaction( SIGSEGV, &sact, 0 );
+        sigaction( SIGKILL, &sact, 0 );
+        sigaction( SIGINT, &sact, 0 );
+    }
 
     read_map();
 
