@@ -3,6 +3,7 @@
 
 Item:: Item( Vec pos, const std::string& name, char image, 
              Material material, Type type )
-    : pos(pos), name(name), image(image), material(material), type(type)
+    : Object(pos,image), material(material), type(type)
 {
+    this->name = name;
 }

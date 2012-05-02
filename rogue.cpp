@@ -152,20 +152,16 @@ void show_quadrant( const Vec& quad, const Vec& pos )
     show_bresenham_line( pos, quad );
 }
 
-template< typename E >
-void print_element( const E& element )
-{
-    if( map.visible(element.pos) )
-    {
-        auto p = element.pos + mapPos;
-        mvaddch( p.y, p.x, element.image ); 
-    }
-}
-
-void print_tile( Vec p, char c )
+void print( Vec p, char c )
 {
     p = p + mapPos;
     mvaddch( p.y, p.x, c );
+}
+
+void print_object( const Object& object )
+{
+    if( map.visible(object.pos) )
+        print( object.pos, object.image );
 }
 
 void print_map()
@@ -184,11 +180,11 @@ void print_map()
         {
             auto tile = map.tile( p );
             if( tile.visible )
-                print_tile( p, tile.c );
+                print( p, tile.c );
         }
 
-    std::for_each( items.begin(),  items .end(), print_element<Item > );
-    std::for_each( actors.begin(), actors.end(), print_element<Actor> );
+    std::for_each( items.begin(),  items .end(), print_object );
+    std::for_each( actors.begin(), actors.end(), print_object );
 }
 
 void print_log()
@@ -278,7 +274,7 @@ int main()
 
         auto quickest = std::min_element (
             actors.begin(), actors.end(),
-            [=]( const Actor& a, const Actor& b ) {
+            []( const Actor& a, const Actor& b ) {
                 return a.cooldown < b.cooldown;
             }
         );

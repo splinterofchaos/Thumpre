@@ -1,12 +1,12 @@
 
 #pragma once
 
-#include "Vec.h"
+#include "Object.h"
 
 #include <string>
 #include <vector>
 
-struct Item
+struct Item : public Object
 {
     enum Material
     {
@@ -22,9 +22,7 @@ struct Item
         HAND
     };
 
-    Vec pos;
     std::string name;
-    char     image;
     Material material;
     Type     type;
 
