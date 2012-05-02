@@ -93,76 +93,67 @@ ActorList::iterator actor_at( Vec pos )
     );
 }
 
-struct AttackValue
+bool attack( const Actor& attacker, Actor& defender )
 {
-    int strength;
-    
-    AttackValue( const Actor& who, const Item& withWhat )
+    int materialDensity = 0;
+    int typePower = 0;
+
+    Item weapon = attacker.unarmed_weapon();
+
+    switch( weapon.material )
     {
-        strength = who.hp / 8;
-        
-        int weaponVal = 0;
-
-        switch( withWhat.material )
-        {
-          case Item::WOOD: weaponVal = 10;
-          case Item::HAIR: weaponVal = 2;
-          case Item::SKIN: weaponVal = 4;
-        }
-
-        switch( withWhat.type )
-        { 
-          case Item::ROD:  weaponVal *= 5;
-          case Item::WIG:  weaponVal *= 1;
-          case Item::HAND: weaponVal *= 4;
-        }
-
-        strength += weaponVal;
+      case Item::WOOD: materialDensity = 10; break;
+      case Item::HAIR: materialDensity = 2;  break;
+      case Item::SKIN: materialDensity = 5;  break;
+      default: materialDensity = 1;
     }
 
-    bool hit( Actor* victim )
+    switch( weapon.type )
     {
-        if( ! victim )
-            return false;
+      case Item::ROD:  typePower = 5; break;
+      case Item::WIG:  typePower = 1; break;
+      case Item::HAND: typePower = 3; break;
+      default: typePower = 1;
+    }
 
-        victim->hp -= strength;
+    typePower += attacker.strength;
+
+    int attackStrength = materialDensity * typePower;
+
+    defender.hp -= attackStrength;
+    if( defender.hp < 1 )
+    {
+        defender.hp = 0;
         return true;
     }
-};
+
+    return false;
+}
 
 bool walk( Actor& a, Vec dir )
 {
-    Vec newPos = a.pos + dir;
-
-    if( newPos.x < 0 or newPos.y < 0
-        or (uint)newPos.x > map.dims.y
-        or (uint)newPos.y > map.dims.y )
-        return false;
+    auto sgn = [](int x){return x>0? 1 : x<0? -1 : 0;};
+    Vec newPos = a.pos + Vec( sgn, dir );
 
     ActorList::iterator actorHere = actor_at( newPos );
 
     if( actorHere != actors.end() )
     {
-        logger.push_back( "Hit with what? (f=fist, i=item)" );
-        print_log();
+        std::string message( 1, a.image );
 
-        static Item fist( a.pos, "fist", 'F', Item::SKIN, Item::HAND );
-
-        Item* weapon = 0;
-        Inventory::iterator itWeapon;
-        switch( getch() )
+        if( attack(a, *actorHere) )
         {
-          case 'f': weapon = &fist; break;
-          case 'i': itWeapon = inp_inventory_item(a.inventory); 
-                    weapon = &(*itWeapon);
+            message.append( " killed " );
+            message.push_back( actorHere->image );
+            actors.erase( actorHere );
+        }
+        else
+        {
+            message.append( " hit " );
+            message.push_back( actorHere->image );
         }
 
-        AttackValue atk( a, *weapon );
-        if( atk.hit( &(*actorHere) ) )
-            logger.push_back( "You hit it." );
-
-        if( actorHere->hp < 0 )
-            actors.erase( actorHere );
+        logger.push_back( message );
     }
     else if( map.get(newPos) != '#' )
     {
@@ -173,7 +164,7 @@ bool walk( Actor& a, Vec dir )
         return false;
     }
 
-    a.cooldown += float(25) / a.speed;
+    a.cooldown += 25 / a.speed;
 
     return true;
 }

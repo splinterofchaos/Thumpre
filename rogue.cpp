@@ -233,7 +233,7 @@ int main()
 
     unsigned int time = 0;
 
-    while( not quit )
+    while( not quit and actors.front().playerControlled )
     {
         const int MAP_TOP = 5;
         const int MAP_BOTTOM = MAP_TOP + map.dims.x;
@@ -269,23 +269,15 @@ int main()
         else
         {
             if( map.visible(quickest->pos) )
-            {
-                Vec towardsPlayer = actors.front().pos - quickest->pos;
-
-                if( rogue_length(towardsPlayer) > 1 )
-                    if( std::abs(towardsPlayer.y) > std::abs(towardsPlayer.x) )
-                        towardsPlayer = { 0, towardsPlayer.y };
-                    else
-                        towardsPlayer = { towardsPlayer.x, 0 };
-
-                walk( *quickest, towardsPlayer );
-            } 
+                walk( *quickest, actors.front().pos - quickest->pos );
             else
                 quickest->cooldown += 1;
         }
     }
 
     endwin();
+
+    puts( "Thank you playing! You have died." );
 
     return 0;
 }
