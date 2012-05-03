@@ -1,13 +1,11 @@
 
 #pragma once
 
-#include "Vec.h"
+#include "Object.h"
 #include "Item.h"
 
-struct Actor
+struct Actor : public Object
 {
-    Vec pos;
-
     // Backpack.
     Inventory inventory;
 
@@ -20,8 +18,6 @@ struct Actor
     int strength;
 
     float cooldown; // Time until next move.
-
-    char image;
 
     bool playerControlled;
 
