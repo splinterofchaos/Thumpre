@@ -32,3 +32,5 @@ Vec operator * ( const N n, const Vec& a )
 {
     return a * n;
 }
+
+int rogue_length( const Vec& v );

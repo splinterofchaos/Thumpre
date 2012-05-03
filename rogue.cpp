@@ -256,7 +256,7 @@ int main()
 
     unsigned int time = 0;
 
-    while( not quit )
+    while( not quit and actors.front().playerControlled )
     {
         const int MAP_TOP = 5;
         const int MAP_BOTTOM = MAP_TOP + map.dims.x;
@@ -287,16 +287,19 @@ int main()
         if( quickest->playerControlled )
         {
             move_player( *quickest );
-            quickest->cooldown += 1;
         }
         else
         {
-            walk( *quickest, Vec(1,0) );
-            quickest->cooldown += 1;
-        } 
+            if( map.visible(quickest->pos) )
+                walk( *quickest, actors.front().pos - quickest->pos );
+            else
+                quickest->cooldown += 1;
+        }
     }
 
     endwin();
+
+    puts( "Thank you playing! You have died." );
 
     return 0;
 }

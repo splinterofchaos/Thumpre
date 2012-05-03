@@ -30,3 +30,8 @@ Vec operator - ( const Vec& a, const Vec& b )
 {
     return { a.x - b.x, a.y - b.y };
 }
+
+int rogue_length( const Vec& v )
+{
+    return v.y > v.x? v.y : v.x;
+}
