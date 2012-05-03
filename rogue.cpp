@@ -175,9 +175,8 @@ void print_map()
             map.visible( p, false );
 
     int r = 5;
-    Vec corners[] = { Vec(r,r), Vec(-r,r), Vec(-r,-r), Vec(r,-r) };
-    for( uint i = 0; i < 4; i++ )
-        show_quadrant( corners[i], actors.front().pos );
+    for( const auto& corner : {Vec(r,r), Vec(-r,-r), Vec(r,-r), Vec(-r,r)} )
+        show_quadrant( corner, actors.front().pos );
 
     for( Vec p(0,0); p.y < map.dims.y; p.y++ )
         for( p.x = 0 ; p.x < map.dims.x; p.x++ )
@@ -194,16 +193,15 @@ void print_map()
 void print_inventory()
 {
     // Print the inventory.
-    mvprintw( inventoryPos.y++, inventoryPos.x, "You have:" );
+    mvprintw( inventoryPos.y, inventoryPos.x, "You have:" );
 
     uint x = inventoryPos.x + 2;
     if( actors[0].inventory.size() )
     {
         uint y = 0;
-        FOR_EACH ( 
-            actors.front().inventory, Item& i, 
-            mvprintw( inventoryPos.y + y++, x, "%c - %s", 'a'+y, i.name.c_str() ) 
-        );
+        for( const auto& i : actors.front().inventory )
+            mvprintw( inventoryPos.y + y++ + 1, x, 
+                      "%c - %s", 'a'+y, i.name.c_str() );
     }
     else
     {
@@ -268,20 +266,14 @@ int main()
             }
         );
 
-        Inventory::iterator itemHere = item_at( actors[0].pos );
         if( quickest->playerControlled )
         {
             auto itemHere = item_at( actors[0].pos );
             if( itemHere != items.end() )
                 log( "Your foot hits a %s.", itemHere->name.c_str() );
             print_everything();
-        }
-
-        if( quickest->playerControlled )
             clear_log();
 
-        if( quickest->playerControlled )
-        {
             move_player( *quickest );
         }
         else

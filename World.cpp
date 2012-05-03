@@ -21,14 +21,9 @@ Inventory::iterator inp_inventory_item( Inventory& inventory )
     uint c = prompt( "Choose an item (a-%c)", inventory.size() - 1 + 'a' );
 
     if( c < inventory.size() )
-    {
-        Inventory::iterator ret = inventory.begin() + c;
-        return ret;
-    }
+        return inventory.begin() + c;
     else
-    {
         return inventory.end();
-    }
 }
 
 bool combine( Inventory* inv )

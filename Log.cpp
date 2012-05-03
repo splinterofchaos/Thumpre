@@ -67,10 +67,8 @@ extern Vec logPos; // Defined in rogue.cpp
 void print_log()
 {
     uint row = 0;
-    auto print_line = [&]( const std::string& line )
-    { mvprintw( logPos.y + row++, logPos.x, line.c_str() ); };
-
-    std::for_each( logger.begin(), logger.end(), print_line );
+    for( const auto& line : logger )
+        mvprintw( logPos.y + row++, logPos.x, line.c_str() );
 }
 
 void clear_log()

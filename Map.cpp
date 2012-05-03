@@ -36,10 +36,8 @@ void Map::add_row( const std::string& rowstr )
     dims.y++;
 
     Row row; row.reserve( dims.x );
-    std::for_each ( 
-        rowstr.begin(), rowstr.end(), 
-        [&](const char c){ row.push_back({c,false}); }
-    );
+    for( const char c : rowstr )
+        row.push_back({c,false});
 
     tiles.push_back( row );
 }
@@ -47,11 +45,8 @@ void Map::add_row( const std::string& rowstr )
 std::string Map::row( unsigned int r ) const
 {
     std::string s; s.reserve( dims.x );
-    auto row = tiles[r];
-    std::for_each (
-        row.begin(), row.end(),
-        [&](const Tile& t){ s.push_back(t.c); }
-    );
+    for( const Tile& tile : tiles[r] )
+        s.push_back( tile.c );
 
     return s;
 }
