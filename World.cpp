@@ -1,33 +1,24 @@
 
 #include "World.h"
+#include "Log.h"
 
 #include <ncurses.h>
 #include <algorithm>
 
 Map map;
 Inventory items;
-Logger logger;
 bool quit = false;
 ActorList actors;
 
-// Defined at main.
-extern void print_log();
-
 Inventory::iterator inp_inventory_item( Inventory& inventory )
 {
-    std::string prompt = "Choose an item (";
-    if( inventory.size() )
+    if( not inventory.size() )
     {
-        prompt += "a-";
-        prompt.push_back( inventory.size() - 1 + 'a' );
+        log( "You have nothing." );
+        return inventory.end();
     }
 
-    prompt += ") ";
-    
-    logger.push_back( prompt );
-    print_log();
-
-    uint c = getch() - 'a';
+    uint c = prompt( "Choose an item (a-%c)", inventory.size() - 1 + 'a' );
 
     if( c < inventory.size() )
     {
@@ -42,21 +33,17 @@ Inventory::iterator inp_inventory_item( Inventory& inventory )
 
 bool combine( Inventory* inv )
 {
-    logger.clear();
-
     if( inv->size() < 2 )
     {
-        logger.push_back( 
-            std::string("You have ") 
-            + ( ! inv->size() ? "nothing" : "only one thing." )
-        );
+        log( "You have %s.", inv->size() ? "only one thing" : "nothing" );
         return false;
     }
 
 
-    logger.push_back( "Combine... " );
-
+    log( "Combine... " );
     Inventory::iterator first  = inp_inventory_item(*inv);
+
+    log( "with..." );
     Inventory::iterator second = inp_inventory_item(*inv);
 
     if( first == inv->end() or second == inv->end() )
@@ -145,14 +132,13 @@ bool walk( Actor& a, Vec dir )
 
     if( actorHere != actors.end() )
     {
-        logger.push_back( "Hit with what? (f=fist, i=item)" );
-        print_log();
+        char c = prompt( "Hit with what? (f=fist, i=item)" );
 
         static Item fist( a.pos, "fist", 'F', Item::SKIN, Item::HAND );
 
         Item* weapon = 0;
         Inventory::iterator itWeapon;
-        switch( getch() )
+        switch( c )
         {
           case 'f': weapon = &fist; break;
           case 'i': itWeapon = inp_inventory_item(a.inventory); 
@@ -161,7 +147,7 @@ bool walk( Actor& a, Vec dir )
 
         AttackValue atk( a, *weapon );
         if( atk.hit( &(*actorHere) ) )
-            logger.push_back( "You hit it." );
+            log( "You hit it." );
 
         if( actorHere->hp < 0 )
             actors.erase( actorHere );
@@ -203,24 +189,24 @@ void move_player( Actor& player )
           if( itemHere != items.end() )
           {
               transfer( &player.inventory, &items, itemHere );
-              logger.push_back( "Got " + player.inventory.back().name + "." );
+              log( "Got %s,", player.inventory.back().name.c_str() );
           }
           else
-              logger.push_back( "There's nothing here." );
+              log( "There's nothing here." );
 
           break;
 
       case 'C': if( ! combine(&player.inventory) )
-                    logger.push_back( "I can't combine them." ); 
+                    log( "I can't combine them." ); 
                 break;
 
-      case 'c': logger.push_back( "..." ); break;
+      case 'c': log( "..." ); break;
       case 'q': quit = true; break;
-      default: logger.push_back( "Is that key supposed to do something?" ); break;
+      default: log( "Is that key supposed to do something?" ); break;
     }
 
     if( inputDir.x or inputDir.y )
         if( not walk(player, inputDir) )
-            logger.push_back( "Cannot move there." );
+            log( "Cannot move there." );
 }
 

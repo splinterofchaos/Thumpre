@@ -19,6 +19,10 @@
 // to call endwin to avoid screwing up the user's terminal. 
 void end_window_and_terminate( int sig, siginfo_t* info, void* arg )
 {
+    (void)sig;
+    (void)info;
+    (void)arg;
+
     endwin();
     perror( "Signal to terminate recieved" );
     exit(1);
@@ -191,16 +195,6 @@ void print_map()
     std::for_each( actors.begin(), actors.end(), print_element<Actor> );
 }
 
-void print_log()
-{
-    uint row = 0;
-    FOR_EACH ( 
-        logger, std::string& msg, 
-        mvprintw( logPos.y + row++, logPos.x, msg.c_str() ) 
-    );
-    logger.clear();
-}
-
 void print_inventory()
 {
     // Print the inventory.
@@ -221,6 +215,15 @@ void print_inventory()
     }
 }
 
+void print_everything()
+{
+    erase();
+    print_map();
+    print_inventory();
+    print_log();
+    refresh();
+}
+
 int main()
 {
     initscr();
@@ -230,7 +233,6 @@ int main()
     keypad(stdscr, TRUE);
 
     std::srand( std::time(0) );
-    int* i;
 
     {
         struct sigaction sact;
@@ -263,25 +265,24 @@ int main()
         inventoryPos = Vec( 4, MAP_BOTTOM + 2 );
         mapPos = Vec( 2, MAP_TOP );
 
-        erase();
-        
-        Inventory::iterator itemHere = item_at( actors[0].pos );
-
-        if( itemHere != items.end() )
-            logger.push_back( "Your foot hits a " + itemHere->name + "." );
-
-        print_map();
-        print_inventory();
-        print_log();
-
-        refresh(); 
-
         auto quickest = std::min_element (
             actors.begin(), actors.end(),
             [=]( const Actor& a, const Actor& b ) {
                 return a.cooldown < b.cooldown;
             }
         );
+
+        Inventory::iterator itemHere = item_at( actors[0].pos );
+        if( quickest->playerControlled )
+        {
+            auto itemHere = item_at( actors[0].pos );
+            if( itemHere != items.end() )
+                log( "Your foot hits a %s.", itemHere->name.c_str() );
+            print_everything();
+        }
+
+        if( quickest->playerControlled )
+            clear_log();
 
         if( quickest->playerControlled )
         {
