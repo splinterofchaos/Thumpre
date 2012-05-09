@@ -36,17 +36,19 @@ bool combine( Inventory* inv )
 
 
     log( "Combine... " );
-    Inventory::iterator first  = inp_inventory_item(*inv);
+    auto first  = inp_inventory_item(*inv);
 
     log( "with..." );
-    Inventory::iterator second = inp_inventory_item(*inv);
+    auto second = inp_inventory_item(*inv);
 
     if( first == inv->end() or second == inv->end() )
         return false;
 
-    if( first->type == Item::ROD and second->type == Item::WIG )
+    log( "Testing..." );
+
+    if( first->shape == &rod and second->shape == &wig )
     {
-        Item product( {0,0}, "Wooden Broom", '/', Item::WOOD, Item::ROD );
+        Item product( &broom, *first, *second );
         inv->erase( first );
         inv->erase( second );
         inv->push_back( product );
@@ -81,26 +83,7 @@ bool attack( const Actor& attacker, Actor& defender )
     int typePower = 0;
 
     Item weapon = attacker.unarmed_weapon();
-
-    switch( weapon.material )
-    {
-      case Item::WOOD: materialDensity = 10; break;
-      case Item::HAIR: materialDensity = 2;  break;
-      case Item::SKIN: materialDensity = 5;  break;
-      default: materialDensity = 1;
-    }
-
-    switch( weapon.type )
-    {
-      case Item::ROD:  typePower = 5; break;
-      case Item::WIG:  typePower = 1; break;
-      case Item::HAND: typePower = 3; break;
-      default: typePower = 1;
-    }
-
-    typePower += attacker.strength;
-
-    int attackStrength = materialDensity * typePower;
+    int attackStrength = mass( weapon );
 
     defender.hp -= attackStrength;
     if( defender.hp < 1 )

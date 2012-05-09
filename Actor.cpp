@@ -22,5 +22,5 @@ Actor::Actor( Vec pos, char image )
 
 Item Actor::unarmed_weapon() const
 {
-    return Item( {0,0}, "Fist", 'F', Item::SKIN, Item::HAND );
+    return Item( 'F', &skin, &hand );
 }

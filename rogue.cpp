@@ -245,8 +245,11 @@ int main()
 
     actors.push_back( Actor(random_position(), 'k') );
 
-    items.push_back( Item(random_position(), "Broom Handle", '/', Item::WOOD, Item::ROD) );
-    items.push_back( Item(random_position(), "Horse Hair",   '"', Item::HAIR, Item::WIG) );
+    items.push_back( Item('/', &wood, &rod) );
+    items.push_back( Item('"', &hair, &wig) );
+
+    items[0].pos = random_position();
+    items[1].pos = random_position();
 
     unsigned int time = 0;
 
