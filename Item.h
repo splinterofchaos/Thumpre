@@ -17,6 +17,7 @@ struct Material
     std::string adjective;
 
     int density;
+    int durrability;
 };
 
 struct Shape
@@ -28,8 +29,8 @@ struct Shape
 
 bool operator == ( const Shape&, const Shape& );
 
-extern Material air, wood, hair, skin;
-extern Shape nothing, rod, wig, hand, broom;
+extern Material air, wood, hair, skin, glass, healingPotion;
+extern Shape nothing, rod, wig, hand, broom, bottle, liquid;
 
 struct Item : public Object
 {
@@ -39,10 +40,17 @@ struct Item : public Object
     const Shape    * shape;
 
     Item();
+
+    // A leaf item.
     Item( char image, const Material*, const Shape* );
+    // A container. (image = !) 
+    Item( const Material*, const Shape*, const Item& );
+
+    // A complex item.
     Item( const Shape*, const Item& mainCmp, const Item& second );
 };
 
 int mass( const Item& );
+int durrability( const Item& );
 
 typedef std::vector< Item > Inventory;

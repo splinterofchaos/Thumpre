@@ -247,9 +247,10 @@ int main()
 
     items.push_back( Item('/', &wood, &rod) );
     items.push_back( Item('"', &hair, &wig) );
+    items.push_back( Item(&glass, &bottle, Item('o',&healingPotion,&liquid)) );
 
-    items[0].pos = random_position();
-    items[1].pos = random_position();
+    for( auto& i : items )
+        i.pos = random_position();
 
     unsigned int time = 0;
 

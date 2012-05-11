@@ -86,6 +86,12 @@ bool attack( const Actor& attacker, Actor& defender )
     int attackStrength = mass( weapon );
 
     defender.hp -= attackStrength;
+
+    if( attackStrength > durrability(weapon) and weapon.shape != &hand )
+    {
+        // TODO (Needs code from "attack" branch.)
+    }
+
     if( defender.hp < 1 )
     {
         defender.hp = 0;
