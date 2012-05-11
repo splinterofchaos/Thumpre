@@ -1,0 +1,27 @@
+
+air {
+    # The defaults should be correct; not dense, infinitely durable.
+}
+
+wood "wooden" {
+    density = 10
+    durability = 50
+}
+
+skin "skinny" {
+    density = 5
+    durability = 200
+}
+
+glass "glassy" {
+    density = 4
+    durability = 10
+}
+
+horse {
+    density = 2
+}
+
+health "healing" {
+    density = 1
+}

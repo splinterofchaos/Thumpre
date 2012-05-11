@@ -1,0 +1,32 @@
+
+nothing " " {
+}
+
+rod "/" {
+    volume = 5
+}
+
+wig """ {
+    volume = 2
+}
+
+hand {
+    volume = 3
+}
+
+broom "/" {
+    shape = row + wig
+    volume = 1
+}
+
+bottle "!" {
+    volume = 2
+}
+
+potion "o" {
+    volume = 5
+}
+
+bottle-of "!" {
+    shape = potion + bottle
+}

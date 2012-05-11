@@ -201,7 +201,7 @@ void print_inventory()
         uint y = 0;
         for( const auto& i : actors.front().inventory )
             mvprintw( inventoryPos.y + y++ + 1, x, 
-                      "%c - %s", 'a'+y, i.name.c_str() );
+                      "%c %c %s", 'a'+y, i.image, i.name.c_str() );
     }
     else
     {
