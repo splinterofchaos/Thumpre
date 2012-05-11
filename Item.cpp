@@ -4,25 +4,12 @@
 #include <algorithm>
 #include <climits>
 
-//       mat   :   name    adjective  dens  dur
-Material air   = { "air",   "air",       0,  -1 };
-Material wood  = { "wood",  "wooden",   10,  50 };
-Material skin  = { "skin",  "skin",      5, 200 };
-Material glass = { "glass", "glass",     4,  10 };
-Material hair  = { "horse hair", "horse hair", 2, 0 };
-Material healingPotion = { "health", "healing", 1, 0 };
+std::map< std::string, Shape > shapes;
+std::map< std::string, Material > materials;
 
-Shape nothing = { "nothing", 0 };
-Shape rod     = { "rod",     5 };
-Shape wig     = { "wig",     1 };
-Shape hand    = { "hand",    3 }; 
-Shape broom   = { "broom",   0 };
-Shape bottle  = { "bottle",  5 };
-Shape liquid  = { "potion",  5 };
-
-bool operator == ( const Shape& a, const Shape& b )
+char _img( const std::string& shape )
 {
-    return a.name == b.name and a.volume == b.volume;
+    return shapes[ shape ].image;
 }
 
 Item::Item()
@@ -31,26 +18,44 @@ Item::Item()
 }
 
 // Leaf item.
-Item::Item( char image, const Material* m, const Shape* s )
-    : Object({0,0}, image), material(m), shape(s)
+Item::Item( const std::string& m, const std::string& s )
+    : Object({0,0}, _img(s)), material(m), shape(s)
 {
-    name = m->adjective + " " + s->name;
+    name = materials[m].adjective + " " + s;
 }
 
 // A root item is nothing; just a placeholder for its parts.
-Item::Item( const Shape* s, const Item& main, const Item& scnd )
+Item::Item( const std::string& s, const Item& main, const Item& scnd )
     : Object(main.pos, main.image), 
-      material(&air), shape(s)
+      material("air"), shape(s)
 {
-    name = main.material->adjective + " " + s->name;
+    name = materials[main.material].adjective + " " + s;
     components.push_back( main );
     components.push_back( scnd );
 }
 
-Item::Item( const Material* m, const Shape* s, const Item& i )
+Item::Item( const std::string& m, const std::string& s, const Item& i )
     : Object({0,0}, '!'), components(1,i), material(m), shape(s)
 {
-    name = s->name + " of " + i.material->name;
+    name = m + " " + s + " of " + i.material;
+}
+
+void init_items()
+{
+    materials["air"] = { "air", 0, INT_MAX };
+    materials["wood"] = { "wooden", 10, 50 };
+    materials["skin"] = { "skinny", 5, 200 };
+    materials["glass"] = { "glassy", 4, 10 };
+    materials["horse"] = { "horse",  2,  0 };
+    materials["health"] = { "healing", 1, 0 };
+
+    shapes["nothing"] = { 0, ' ' };
+    shapes["rod"]     = { 5, '/' };
+    shapes["wig"]     = { 1, '\'' };
+    shapes["hand"]    = { 3, 'F' };
+    shapes["broom"]   = { 0, '/' };
+    shapes["bottle"]  = { 5, '!' };
+    shapes["potion"]  = { 5, 'o' };
 }
 
 template< typename F >
@@ -65,7 +70,7 @@ int _accumulate_item( const Item& i, F f )
 int mass( const Item& i )
 {
     auto m = []( const Item& i ){ 
-        return i.material->density * i.shape->volume; 
+        return materials[i.material].density * shapes[i.shape].volume; 
     };
     return _accumulate_item( i, m );
 }
@@ -73,7 +78,7 @@ int mass( const Item& i )
 int durrability( const Item& i )
 {
     auto d = [](const Item& i){ 
-        return i.material->durrability; 
+        return materials[i.material].durrability; 
     };
     return _accumulate_item( i, d );
 }

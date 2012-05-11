@@ -46,9 +46,9 @@ bool combine( Inventory* inv )
 
     log( "Testing..." );
 
-    if( first->shape == &rod and second->shape == &wig )
+    if( first->shape == "rod" and second->shape == "wig" )
     {
-        Item product( &broom, *first, *second );
+        Item product( "broom", *first, *second );
         inv->erase( first );
         inv->erase( second );
         inv->push_back( product );
@@ -87,7 +87,7 @@ bool attack( const Actor& attacker, Actor& defender )
 
     defender.hp -= attackStrength;
 
-    if( attackStrength > durrability(weapon) and weapon.shape != &hand )
+    if( attackStrength > durrability(weapon) and weapon.shape != "hand" )
     {
         // TODO (Needs code from "attack" branch.)
     }

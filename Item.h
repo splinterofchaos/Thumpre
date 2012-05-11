@@ -5,6 +5,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 
 /* An Item is a tree where each node is made of something and has a shape. A
  * root node, however, has no shape or material. It acts only as a placeholder
@@ -13,19 +14,21 @@
 
 struct Material
 {
-    std::string name;
     std::string adjective;
 
     int density;
     int durrability;
 };
 
+extern std::map< std::string, Material > materials;
+
 struct Shape
 {
-    std::string name;
-
     int volume;
+    char image;
 };
+
+extern std::map< std::string, Shape > shapes;
 
 bool operator == ( const Shape&, const Shape& );
 
@@ -36,19 +39,24 @@ struct Item : public Object
 {
     std::vector< Item > components;
 
-    const Material * material;
-    const Shape    * shape;
+    std::string material;
+    std::string shape;
 
     Item();
 
     // A leaf item.
-    Item( char image, const Material*, const Shape* );
+    Item( const std::string& mat, const std::string& shp );
     // A container. (image = !) 
-    Item( const Material*, const Shape*, const Item& );
+    Item( const std::string& mat, const std::string& shp, const Item& );
 
     // A complex item.
-    Item( const Shape*, const Item& mainCmp, const Item& second );
+    Item( const std::string& shape, const Item& mainCmp, const Item& second );
 };
+
+typedef std::map< const char* const, Item > Catalogue;
+extern Catalogue catalogue;
+
+void init_items();
 
 int mass( const Item& );
 int durrability( const Item& );

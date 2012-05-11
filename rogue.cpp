@@ -226,6 +226,8 @@ int main()
     refresh();
     keypad(stdscr, TRUE);
 
+    init_items();
+
     std::srand( std::time(0) );
 
     {
@@ -245,9 +247,9 @@ int main()
 
     actors.push_back( Actor(random_position(), 'k') );
 
-    items.push_back( Item('/', &wood, &rod) );
-    items.push_back( Item('"', &hair, &wig) );
-    items.push_back( Item(&glass, &bottle, Item('o',&healingPotion,&liquid)) );
+    items.push_back( Item("wood", "rod") );
+    items.push_back( Item("horse", "wig") );
+    items.push_back( Item("glass", "bottle", Item("health","liquid")) );
 
     for( auto& i : items )
         i.pos = random_position();
