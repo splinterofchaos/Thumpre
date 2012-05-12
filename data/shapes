@@ -1,16 +1,20 @@
 
 nothing " " {
+    makeup: air
 }
 
 rod "/" {
+    makeup: wood iron
     volume = 5
 }
 
 wig """ {
+    makeup: horse
     volume = 2
 }
 
 hand {
+    makeup: skin
     volume = 3
 }
 
@@ -20,13 +24,12 @@ broom "/" {
 }
 
 bottle "!" {
+    makeup: glass
     volume = 2
 }
 
 potion "o" {
+    makeup: health
     volume = 5
 }
 
-bottle-of "!" {
-    shape = potion + bottle
-}

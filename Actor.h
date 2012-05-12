@@ -23,5 +23,5 @@ struct Actor : public Object
 
     Actor( Vec pos, char image );
 
-    Item unarmed_weapon() const;
+    std::string unarmed_weapon() const;
 };

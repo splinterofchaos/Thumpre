@@ -10,6 +10,7 @@
 
 std::map< std::string, Shape > shapes;
 std::map< std::string, Material > materials;
+Catalogue catalogue;
 
 Item::Item()
     : Object({0,0}, ' ')
@@ -25,23 +26,47 @@ char _img( const std::string& shape )
 Item::Item( const std::string& m, const std::string& s )
     : Object({0,0}, _img(s)), material(m), shape(s)
 {
-    name = materials[m].adjective + " " + s;
 }
 
-// A root item is nothing; just a placeholder for its parts.
-Item::Item( const std::string& s, const Item& main, const Item& scnd )
-    : Object(main.pos, main.image), 
-      material("air"), shape(s)
+Item basic_item( const std::string& m, const std::string& s )
 {
-    name = materials[main.material].adjective + " " + s;
-    components.push_back( main );
-    components.push_back( scnd );
+    Item i( m, s );
+
+    // Example name: wooded box.
+    i.name = materials[m].adjective + " " + s;
+
+    return i;
 }
 
-Item::Item( const std::string& m, const std::string& s, const Item& i )
-    : Object({0,0}, '!'), components(1,i), material(m), shape(s)
+Item container_item( const std::string& m, const std::string& s, const std::string& c )
 {
-    name = m + " " + s + " of " + i.material;
+    Item i = basic_item( m, s );
+
+    // Example: wooden box of rocks.
+    i.name += " of " + c;
+    i.components.push_back( c );
+
+    return i;
+}
+
+Item complex_item( const std::string& shape, 
+                   const std::string& mainCmp, const std::string& scndCmp )
+{
+    const auto& ref = catalogue[ mainCmp ];
+
+    // A complex object takes after its main component.
+    Item i = basic_item( ref.material, shape );
+    i.components.push_back( mainCmp );
+    i.components.push_back( scndCmp );
+    return i;
+}
+
+const std::string& add_to_catalogue( const Item& i )
+{
+    const auto& entry = catalogue.find( i.name );
+    if( entry == catalogue.end() )
+        catalogue[ i.name ] = i;
+    return i.name;
 }
 
 // Most of the fallowing helper functions require a buffer, its size, and a
@@ -98,7 +123,7 @@ char* _next_line( Buf& b )
 // In the first case, subtopic = defaultSub.
 // _next_detail (see below) can then read the source until the end of the
 // subject.
-bool _read_subject( char* subject, char* subtopic, char* defaultSub, Buf& b )
+bool _read_subject( char* subject, char* subtopic, const char*const defaultSub, Buf& b )
 {
     char* line;
     while( (line = _next_line(b)) )
@@ -152,41 +177,70 @@ void init_items()
         log( "Warning: Shapes not loaded." );
 
 
-    char* const def = " ";
+    const char* const def = " ";
     while( _read_subject(subject, subtopic, def, buf) )
     {
         auto& shape = shapes[ subject ];
-        shape = { 0, *subtopic };
+        shape = { {}, 0, *subtopic };
 
         while( (line = _next_detail(buf)) )
         {
+            if( strncmp(line, "makeup", sizeof "makeup"-1) == 0 )
+            {
+                while( *line and *line != '\n' )
+                {
+                    // Skip to the next word.
+                    while( *line and not isspace(*line) )
+                        line++;
+                    while( *line and isspace(*line) )
+                        line++;
+
+                    if( *line )
+                    {
+                        char makeup[30];
+                        sscanf( line, "%s", makeup );
+                        shape.possibleMakup.push_back( makeup );
+                    }
+                }
+            }
+
             if( sscanf(line, "volume = %d", &shape.volume) )
-                ;
+            {
+            }
         }
     }
 }
 
 template< typename F >
-int _accumulate_item( const Item& i, F f )
+int _accumulate_item( const std::string& name, F f )
 {
+    auto iter = catalogue.find( name );
+    if( iter == catalogue.end() )
+    {
+        log( "_accumulated_item: %s does not exist.", name.c_str() );
+        return 0;
+    }
+
+    auto& i = iter->second;
     int sum = f( i );
     for( const auto& c : i.components )
         sum += _accumulate_item( c, f );
     return sum;
 }
 
-int mass( const Item& i )
+int mass( const std::string& name )
 {
     auto m = []( const Item& i ){ 
         return materials[i.material].density * shapes[i.shape].volume; 
     };
-    return _accumulate_item( i, m );
+    return _accumulate_item( name, m );
 }
 
-int durrability( const Item& i )
+int durrability( const std::string& name )
 {
     auto d = [](const Item& i){ 
         return materials[i.material].durrability; 
     };
-    return _accumulate_item( i, d );
+    return _accumulate_item( name, d );
 }
+

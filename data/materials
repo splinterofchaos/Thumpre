@@ -8,12 +8,17 @@ wood "wooden" {
     durability = 50
 }
 
+iron {
+    density = 20
+    durability = 200
+}
+
 skin "skinny" {
     density = 5
     durability = 200
 }
 
-glass "glassy" {
+glass {
     density = 4
     durability = 10
 }

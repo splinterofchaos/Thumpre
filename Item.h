@@ -24,6 +24,7 @@ extern std::map< std::string, Material > materials;
 
 struct Shape
 {
+    std::vector< std::string > possibleMakup;
     int volume;
     char image;
 };
@@ -35,30 +36,32 @@ bool operator == ( const Shape&, const Shape& );
 extern Material air, wood, hair, skin, glass, healingPotion;
 extern Shape nothing, rod, wig, hand, broom, bottle, liquid;
 
+typedef std::vector< std::string > Inventory;
 struct Item : public Object
 {
-    std::vector< Item > components;
+    Inventory components;
 
     std::string material;
     std::string shape;
 
     Item();
 
-    // A leaf item.
     Item( const std::string& mat, const std::string& shp );
-    // A container. (image = !) 
-    Item( const std::string& mat, const std::string& shp, const Item& );
-
-    // A complex item.
-    Item( const std::string& shape, const Item& mainCmp, const Item& second );
 };
 
-typedef std::map< const char* const, Item > Catalogue;
+Item basic_item( const std::string& material, const std::string& shape );
+Item container_item( const std::string& material, const std::string& shape, 
+                     const std::string& contents );
+Item complex_item( const std::string& shape, 
+                   const std::string& mainCmp, const std::string& scndCmp );
+
+typedef std::map< std::string, Item > Catalogue;
 extern Catalogue catalogue;
+
+const std::string& add_to_catalogue( const Item& i );
 
 void init_items();
 
-int mass( const Item& );
-int durrability( const Item& );
+int mass( const std::string& );
+int durrability( const std::string& );
 
-typedef std::vector< Item > Inventory;

@@ -20,7 +20,8 @@ Actor::Actor( Vec pos, char image )
     //equipment[ EQ_MAIN_WEAPON ] = unarmed_weapon();
 }
 
-Item Actor::unarmed_weapon() const
+std::string Actor::unarmed_weapon() const
 {
-    return Item( "skin", "hand" );
+    catalogue[ "fist" ] = Item( "skin", "hand" );
+    return "fist";
 }

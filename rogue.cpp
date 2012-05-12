@@ -168,6 +168,12 @@ void print_object( const Object& object )
         print( object.pos, object.image );
 }
 
+void print_item( const MapItem& mi )
+{
+    if( map.visible(mi.pos) )
+        print( mi.pos, catalogue[mi.item].image );
+}
+
 void print_map()
 {
     for( Vec p(0,0); p.y < map.dims.y; p.y++ )
@@ -186,7 +192,7 @@ void print_map()
                 print( p, tile.c );
         }
 
-    std::for_each( items.begin(),  items .end(), print_object );
+    std::for_each( items.begin(),  items .end(), print_item );
     std::for_each( actors.begin(), actors.end(), print_object );
 }
 
@@ -199,9 +205,12 @@ void print_inventory()
     if( actors[0].inventory.size() )
     {
         uint y = 0;
-        for( const auto& i : actors.front().inventory )
+        for( const auto& iname : actors.front().inventory )
+        {
+            const auto& i = catalogue[ iname ];
             mvprintw( inventoryPos.y + y++ + 1, x, 
                       "%c %c %s", 'a'+y, i.image, i.name.c_str() );
+        }
     }
     else
     {
@@ -247,12 +256,15 @@ int main()
 
     actors.push_back( Actor(random_position(), 'k') );
 
-    items.push_back( Item("wood", "rod") );
-    items.push_back( Item("horse", "wig") );
-    items.push_back( Item("glass", "bottle", Item("health","liquid")) );
+    auto scatter_item = [&]( const Item& i )
+    {
+        items.push_back( {random_position(), add_to_catalogue(i)} );
+    };
+    scatter_item( basic_item("wood",  "rod") );
+    scatter_item( basic_item("horse", "wig") );
 
-    for( auto& i : items )
-        i.pos = random_position();
+    auto name = add_to_catalogue( basic_item("health", "potion") );
+    scatter_item( container_item("glass", "bottle", name) );
 
     unsigned int time = 0;
 
@@ -276,7 +288,7 @@ int main()
         {
             auto itemHere = item_at( actors[0].pos );
             if( itemHere != items.end() )
-                log( "Your foot hits a %s.", itemHere->name.c_str() );
+                log( "Your foot hits a %s.", itemHere->item.c_str() );
             print_everything();
             clear_log();
 
