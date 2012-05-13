@@ -10,7 +10,7 @@ Map::Map()
 }
 
 Map::Map( Vec dim )
-    : tiles( dim.y, Row(dim.x, {' ', false}) ), dims(dim)
+    : tiles( dim.y, Row(dim.x, {' ', false, false}) ), dims(dim)
 {
 }
 
@@ -73,7 +73,20 @@ bool Map::visible( const Vec& v ) const
 
 void Map::visible( const Vec& v, bool canSeeIt )
 {
-    tile( v ).visible = canSeeIt;
+    auto& t = tile( v );
+    if( canSeeIt )
+        t.seen = true;
+    t.visible = canSeeIt;
+}
+
+bool Map::seen( const Vec& v ) const
+{
+    return tile( v ).seen;
+}
+
+void Map::seen( const Vec& v, bool canSeeIt )
+{
+    tile( v ).seen = canSeeIt;
 }
 
 char& Map::get( const Vec& v )

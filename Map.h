@@ -10,6 +10,7 @@ struct Map
     {
         char c;
         bool visible;
+        bool seen;
     };
 
     typedef std::vector<Tile> Row;
@@ -37,6 +38,8 @@ struct Map
     const Tile& tile( const Vec& ) const;
     bool visible( const Vec& ) const;
     void visible( const Vec&, bool );
+    bool seen( const Vec& ) const;
+    void seen( const Vec&, bool );
     char&       get( const Vec& );
     const char& get( const Vec& ) const;
 };
