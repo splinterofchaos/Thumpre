@@ -258,13 +258,14 @@ int main()
 
     auto scatter_item = [&]( const Item& i )
     {
-        items.push_back( {random_position(), add_to_catalogue(i)} );
+        items.push_back( {random_position(), i.name} );
     };
     scatter_item( basic_item("wood",  "rod") );
     scatter_item( basic_item("horse", "wig") );
 
-    auto name = add_to_catalogue( basic_item("health", "potion") );
-    scatter_item( container_item("glass", "bottle", name) );
+    scatter_item( container_item ( 
+            "glass", "bottle", basic_item("health", "potion").name
+    ) );
 
     unsigned int time = 0;
 

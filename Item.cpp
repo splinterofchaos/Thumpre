@@ -11,6 +11,7 @@
 std::map< std::string, Shape > shapes;
 std::map< std::string, Material > materials;
 Catalogue catalogue;
+Inventory possibleItems;
 
 Item::Item()
     : Object({0,0}, ' ')
@@ -69,146 +70,33 @@ const std::string& add_to_catalogue( const Item& i )
     return i.name;
 }
 
-// Most of the fallowing helper functions require a buffer, its size, and a
-// source file. Here it is.
-struct Buf
-{
-    enum { SIZE = 256 };
-    char buf[SIZE];
-    FILE* src;
-
-    Buf( const char* const file )
-    {
-        src = nullptr;
-        reset( file );
-    }
-
-    void reset( const char* const file )
-    {
-        if( src )
-            fclose( src );
-        if( file )
-            src = fopen( file, "r" );
-    }
-
-    ~Buf()
-    {
-        reset( nullptr );
-    }
-};
-
-// Returns the next non-blank, non-comment line or null.
-// It also skips to the first non-whitespace on that line.
-char* _next_line( Buf& b )
-{
-    while( fgets(b.buf, Buf::SIZE, b.src) )
-    {
-        char* line = b.buf;
-        while( isspace(*line) )
-            line++;
-        if( *line != '\0' and *line != '#' )
-            return line;
-    }
-
-    return nullptr;
-}
-
-// A subject can be in one of two forms:
-//  1) subject {
-//         details
-//     }
-//  2) subject "subtopic" {
-//         details
-//     }
-// In the first case, subtopic = defaultSub.
-// _next_detail (see below) can then read the source until the end of the
-// subject.
-bool _read_subject( char* subject, char* subtopic, const char*const defaultSub, Buf& b )
-{
-    char* line;
-    while( (line = _next_line(b)) )
-    {
-        int suc = sscanf( line, "%s \"%s\" {", subject, subtopic );
-        if( suc != 2 )
-        {
-            suc = sscanf( line, "%s {", subject );
-            strcpy( subtopic, defaultSub );
-        }
-
-        if( suc )
-            return true;
-    }
-    return false;
-}
-
-// Like _next_line, but returns null when the subject ends.
-char* _next_detail( Buf& b )
-{
-    char* line = _next_line( b );
-    return (line and *line != '}')? line : nullptr;
-}
-
 void init_items()
 {
-    Buf buf( "data/materials" );
-    if( not buf.src )
-        log( "Warning: Materials not loaded." );
+    // TODO: It'd be nice if this were done in some script.
 
-    char subject[30], subtopic[30];
-    char* line;
-    while( _read_subject(subject, subtopic, subject, buf) )
-    {
-        auto& mat = materials[ subject ];
-        mat = { subtopic, 0, INT_MAX };
+    materials["wood" ] = { "wooden", 10,      50 };
+    materials["iron" ] = { "iron",   20, INT_MAX };
+    materials["steel"] = { "steel",  30, INT_MAX };
+    materials["skin" ] = { "skin",    5,     200 };
+    materials["glass"] = { "glass",  10,      10 };
+    materials["horse"] = { "horse",   4, INT_MAX };
+    materials["health"] = { "healing", 1, INT_MAX };
+    
+    shapes["rod" ] = { 5, '/' };
+    shapes["wig" ] = { 2, '"' };
+    shapes["hand"] = { 3, ' ' };
+    shapes["bottle"] = { 1, '!' };
+    shapes["potion"] = { 2, 'O' };
 
-        while( (line = _next_detail(buf)) )
-        {
-            if( sscanf(line, "density = %d", &mat.density) )
-            {
-            }
-            else if( sscanf(line, "durability = %d", &mat.durrability) )
-            {
-            }
-        }
-    }
-
-    buf.reset( "data/shapes" );
-    if( not buf.src )
-        log( "Warning: Shapes not loaded." );
-
-
-    const char* const def = " ";
-    while( _read_subject(subject, subtopic, def, buf) )
-    {
-        auto& shape = shapes[ subject ];
-        shape = { {}, 0, *subtopic };
-
-        while( (line = _next_detail(buf)) )
-        {
-            if( strncmp(line, "makeup", sizeof "makeup"-1) == 0 )
-            {
-                while( *line and *line != '\n' )
-                {
-                    // Skip to the next word.
-                    while( *line and not isspace(*line) )
-                        line++;
-                    while( *line and isspace(*line) )
-                        line++;
-
-                    if( *line )
-                    {
-                        char makeup[30];
-                        sscanf( line, "%s", makeup );
-                        shape.possibleMakup.push_back( makeup );
-                    }
-                }
-            }
-
-            if( sscanf(line, "volume = %d", &shape.volume) )
-            {
-            }
-        }
-    }
+    add_to_catalogue( basic_item("wood", "rod") );
+    add_to_catalogue( basic_item("iron", "rod") );
+    add_to_catalogue( basic_item("steel", "rod") );
+    add_to_catalogue( basic_item("health", "potion") );
+    add_to_catalogue( basic_item("glass", "bottle") );
+    add_to_catalogue( container_item("glass", "bottle", "healing potion") );
+    add_to_catalogue( basic_item("horse", "wig") );
+    add_to_catalogue( basic_item("hand", "fist") );
+    log( "%s", basic_item("wood", "rod").name.c_str() );
 }
 
 template< typename F >

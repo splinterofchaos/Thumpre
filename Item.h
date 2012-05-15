@@ -24,7 +24,6 @@ extern std::map< std::string, Material > materials;
 
 struct Shape
 {
-    std::vector< std::string > possibleMakup;
     int volume;
     char image;
 };
@@ -57,6 +56,7 @@ Item complex_item( const std::string& shape,
 
 typedef std::map< std::string, Item > Catalogue;
 extern Catalogue catalogue;
+extern Inventory possibleItems;
 
 const std::string& add_to_catalogue( const Item& i );
 

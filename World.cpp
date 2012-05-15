@@ -158,7 +158,7 @@ void move_player( Actor& player )
           {
               player.inventory.push_back( itemHere->item );
               items.erase( itemHere );
-              log( "Got %s,", player.inventory.back().c_str() );
+              log( "Got %s!", player.inventory.back().c_str() );
           }
           else
               log( "There's nothing here." );
