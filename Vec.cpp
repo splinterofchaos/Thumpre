@@ -1,6 +1,8 @@
 
 #include "Vec.h"
 
+#include <cmath>
+
 Vec::Vec()
 {
     x = y = 0;
@@ -34,4 +36,9 @@ Vec operator - ( const Vec& a, const Vec& b )
 int rogue_length( const Vec& v )
 {
     return v.y > v.x? v.y : v.x;
+}
+
+float magnitude( const Vec& v )
+{
+    return std::sqrt( v.x*v.x + v.y*v.y );
 }

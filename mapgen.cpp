@@ -97,15 +97,19 @@ Range random_range( const Range& rng, const Range& size )
 
 Area random_area( Area area, Range size )
 {
-    Area a (
-        random_range( area.horizontal, size ),
-        random_range( area.vertical,   size )
-    );
+    do
+    {
+        Area a (
+            random_range( area.horizontal, size ),
+            random_range( area.vertical,   size )
+        );
 
-    if( a() < size.min or a() > size.max )
-        return random_area( area, size );
-    else
-        return a;
+        float hratio = std::abs( a.horizontal.size() / a.vertical.size() );
+        const float MAX = 2, IMAX = 1/MAX;
+        if( a() >= size.min and a() <= size.max 
+            and hratio < MAX and hratio > IMAX )
+            return a;
+    } while( true );
 }
 
 void make_map( char* argDimensions )
@@ -126,9 +130,9 @@ void dig_hallway( Vec a, Vec b, Tiles& m )
     auto sgn = []( int x ){ return x>0? 1 : x<0? -1 : 0; };
 
     Vec step( sgn(b.x-a.x), sgn(b.y-a.y) );
-    for( uint x = a.x; x != (uint)b.x; x += step.x )
+    for( int x = a.x; x != b.x; x += step.x )
         m.get( x, a.y ) = '.';
-    for( uint y = a.y; y != (uint)b.y; y += step.y )
+    for( int y = a.y; y != b.y; y += step.y )
         m.get( b.x, y ) = '.';
 }
 
@@ -152,7 +156,7 @@ void dig_splatter_pattern( const uint nRooms, Tiles& m )
     while( n-- )
     {
         Area bounds( {1, m.width-2}, {1, m.height-2} );
-        Range size( 3, AREA / nRooms );
+        Range size( 3, AREA / (nRooms*2) );
         Area area = random_area( bounds, size );
         
         dig_room( area, m );

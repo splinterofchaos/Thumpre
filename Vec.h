@@ -34,3 +34,4 @@ Vec operator * ( const N n, const Vec& a )
 }
 
 int rogue_length( const Vec& v );
+float magnitude( const Vec& v );

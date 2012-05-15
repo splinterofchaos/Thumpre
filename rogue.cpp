@@ -35,6 +35,26 @@ void end_window_and_terminate( int sig, siginfo_t* info, void* arg )
 
 Vec mapPos, inventoryPos, logPos;
 
+// Ncurses colors. Note that color_visible always eqyals color+1.
+enum Colors
+{
+    COL_FLOOR = 1,
+    COL_FLOOR_VISIBLE,
+    COL_WALL,
+    COL_WALL_VISIBLE,
+    COL_HORSE,
+    COL_WOOD,
+    COL_SKIN,
+    COL_GLASS,
+    COL_IRON,
+    COL_STEEL,
+    COL_HEALTH,
+    COL_HUMAN = COL_SKIN,
+    COL_KOBOLT,
+    COL_NORMAL,
+    COL_BACKGROUND
+};
+
 // Produces a random, non-wall, non-occupied position.
 // It asserts that a free space exists and never exits otherwise.
 Vec random_position()
@@ -53,7 +73,7 @@ Vec random_position()
 
 bool read_map()
 {
-    FILE* mapgen = popen( "./mapgen 25x15", "r" ); 
+    FILE* mapgen = popen( "./mapgen 80x30", "r" ); 
     if( not mapgen )
         return false;
 
@@ -120,7 +140,10 @@ void show_bresenham_line( Vec start, Vec v )
     int error = delta.x / 2;
 
     int y = start.y;
-    for( int x = start.x; x != start.x + v.x; x += step.x )
+
+    // How far the ray will travel.
+    int dist = std::abs( v.x );
+    for( int x = start.x; magnitude(Vec(x,y) - start) < dist; x += step.x )
     {
         Vec mapDims( map.dims );
         if( steep ) flip( mapDims );
@@ -156,22 +179,55 @@ void show_quadrant( const Vec& quad, const Vec& pos )
     show_bresenham_line( pos, quad );
 }
 
-void print( Vec p, char c )
+void print( Vec p, char c, int col=COLOR_PAIR(COL_NORMAL) )
 {
     p = p + mapPos;
+
+    attron( col );
     mvaddch( p.y, p.x, c );
+    attroff( col );
 }
 
-void print_object( const Object& object )
+void print_actor( const Actor& a )
 {
-    if( map.visible(object.pos) )
-        print( object.pos, object.image );
+    if( not map.visible(a.pos) )
+        return;
+
+    int color = COLOR_PAIR( COL_NORMAL );
+    switch( a.image )
+    {
+      case 'k': color = COLOR_PAIR(COL_KOBOLT); break;
+      case '@': color = COLOR_PAIR(COL_HUMAN);  break;
+    }
+
+    print( a.pos, a.image, color );
 }
 
 void print_item( const MapItem& mi )
 {
-    if( map.visible(mi.pos) )
-        print( mi.pos, catalogue[mi.item].image );
+    if( not map.visible(mi.pos) )
+        return;
+
+    const Item& i = catalogue[ mi.item ];
+
+    int color = COLOR_PAIR( COL_NORMAL );
+    if( i.material == "wood" )
+        color = COLOR_PAIR( COL_WOOD );
+    else if( i.material == "horse" )
+        color = COLOR_PAIR( COL_HORSE ) | A_BOLD;
+    else if( i.material == "skin" )
+        color = COLOR_PAIR( COL_HUMAN );
+    else if( i.material == "glass" )
+        color = COLOR_PAIR( COL_GLASS );
+    else if( i.material == "health" )
+        color = COLOR_PAIR( COL_HEALTH );
+    else if( i.material == "iron" )
+        color = COLOR_PAIR( COL_IRON );
+    else if( i.material == "steel" )
+        color = COLOR_PAIR( COL_STEEL );
+
+    // Item::pos isn't used, so use MapItem::pos.
+    print( mi.pos, i.image, color );
 }
 
 void print_map()
@@ -180,7 +236,7 @@ void print_map()
         for( p.x = 0 ; p.x < map.dims.x; p.x++ )
             map.visible( p, false );
 
-    int r = 5;
+    int r = 30;
     for( const auto& corner : {Vec(r,r), Vec(-r,-r), Vec(r,-r), Vec(-r,r)} )
         show_quadrant( corner, actors.front().pos );
 
@@ -188,12 +244,22 @@ void print_map()
         for( p.x = 0 ; p.x < map.dims.x; p.x++ )
         {
             auto tile = map.tile( p );
-            if( tile.visible )
-                print( p, tile.c );
+            if( tile.visible or tile.seen )
+            {
+                int color = 0;
+                if( tile.c == '.' )
+                    color = COL_FLOOR;
+                else if( tile.c == '#' )
+                    color = COL_WALL;
+
+                color = tile.visible ? COLOR_PAIR(color+1) : COLOR_PAIR(color);
+
+                print( p, tile.c, color );
+            }
         }
 
     std::for_each( items.begin(),  items .end(), print_item );
-    std::for_each( actors.begin(), actors.end(), print_object );
+    std::for_each( actors.begin(), actors.end(), print_actor );
 }
 
 void print_inventory()
@@ -214,7 +280,7 @@ void print_inventory()
     }
     else
     {
-        mvprintw( inventoryPos.y, x, "Nothing." );
+        mvprintw( inventoryPos.y+1, x, "Nothing." );
     }
 }
 
@@ -222,8 +288,16 @@ void print_everything()
 {
     erase();
     print_map();
+
+    attron( COLOR_PAIR(COL_NORMAL) );
     print_inventory();
     print_log();
+    attroff( COLOR_PAIR(COL_NORMAL) );
+
+    // Put the cursor over the player.
+    Vec p = actors.front().pos + mapPos;
+    move( p.y, p.x );
+
     refresh();
 }
 
@@ -234,6 +308,37 @@ int main()
     noecho();
     refresh();
     keypad(stdscr, TRUE);
+
+    if( not has_colors() )
+    {
+        endwin();
+        perror( "NO COLOR!" );
+
+    }
+
+    start_color();
+    const int BACKGROUND = COLOR_BLUE;
+    init_pair( COL_FLOOR, COLOR_BLACK, BACKGROUND );
+    init_pair( COL_FLOOR_VISIBLE, BACKGROUND, COLOR_WHITE );
+    init_pair( COL_WALL,  BACKGROUND, COLOR_BLACK  );
+    init_pair( COL_WALL_VISIBLE,  COLOR_CYAN, BACKGROUND  );
+    init_pair( COL_HORSE,  COLOR_YELLOW, COLOR_BLACK );
+    init_pair( COL_WOOD,   COLOR_YELLOW, COLOR_BLACK );
+    init_pair( COL_GLASS,  COLOR_WHITE,  COLOR_BLACK );
+    init_pair( COL_IRON,   COLOR_YELLOW, COLOR_BLACK );
+    init_pair( COL_STEEL,  COLOR_WHITE,  COLOR_BLACK );
+    init_pair( COL_HEALTH, COLOR_RED,    COLOR_BLACK );
+    init_pair( COL_KOBOLT, COLOR_GREEN,  BACKGROUND );
+    init_pair( COL_HUMAN,  COLOR_YELLOW, BACKGROUND );
+    init_pair( COL_NORMAL, COLOR_WHITE,  COLOR_BLACK );
+    init_pair( COL_BACKGROUND,COLOR_BLACK,  COLOR_BLACK );
+
+    // Make the background black.
+    assume_default_colors( COLOR_WHITE, COLOR_BLACK );
+    bkgd( COLOR_PAIR(COL_BACKGROUND) );
+
+    // Make cursor invisible.
+    curs_set( 0 );
 
     init_items();
 
@@ -271,12 +376,11 @@ int main()
 
     while( not quit and actors.front().playerControlled )
     {
-        const int MAP_TOP = 5;
-        const int MAP_BOTTOM = MAP_TOP + map.dims.x;
+        const int MAP_TOP = 0;
 
-        logPos = Vec( 2, 1 );
-        inventoryPos = Vec( 4, MAP_BOTTOM + 2 );
-        mapPos = Vec( 2, MAP_TOP );
+        mapPos = Vec( 0, 0 );
+        logPos = Vec( 1, map.dims.y + 1 );
+        inventoryPos = Vec( map.dims.x + 1, 1 );
 
         auto quickest = std::min_element (
             actors.begin(), actors.end(),
