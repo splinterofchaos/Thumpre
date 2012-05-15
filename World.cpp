@@ -6,7 +6,7 @@
 #include <algorithm>
 
 Map map;
-Inventory items;
+MapItems items;
 bool quit = false;
 ActorList actors;
 
@@ -36,20 +36,26 @@ bool combine( Inventory* inv )
 
 
     log( "Combine... " );
-    Inventory::iterator first  = inp_inventory_item(*inv);
+    auto a  = inp_inventory_item(*inv);
 
     log( "with..." );
-    Inventory::iterator second = inp_inventory_item(*inv);
+    auto b = inp_inventory_item(*inv);
 
-    if( first == inv->end() or second == inv->end() )
+    if( a == inv->end() or b == inv->end() )
         return false;
 
-    if( first->type == Item::ROD and second->type == Item::WIG )
+    log( "Testing..." );
+
+    if( catalogue[*a].shape == "rod" and catalogue[*b].shape == "wig" )
     {
-        Item product( {0,0}, "Wooden Broom", '/', Item::WOOD, Item::ROD );
-        inv->erase( first );
-        inv->erase( second );
-        inv->push_back( product );
+        Item i = complex_item( "broom", *a, *b );
+        const auto& existingItem = catalogue.find( i.name );
+        if( existingItem == catalogue.end() )
+            catalogue[ i.name ] = i;
+
+        inv->push_back( i.name );
+        inv->erase( a );
+        inv->erase( b );
     }
 
     return true;
@@ -61,10 +67,10 @@ void transfer( Inventory* to, Inventory* from, Inventory::iterator what )
     from->erase( what );
 }
 
-Inventory::iterator item_at( Vec pos )
+MapItems::iterator item_at( Vec pos )
 {
     return std::find_if ( 
-        items.begin(), items.end(), [=](const Item& i) { return i.pos == pos; }
+        items.begin(), items.end(), [=](const MapItem& i) { return i.pos == pos; }
     );
 }
 
@@ -77,32 +83,16 @@ ActorList::iterator actor_at( Vec pos )
 
 bool attack( const Actor& attacker, Actor& defender )
 {
-    int materialDensity = 0;
-    int typePower = 0;
-
-    Item weapon = attacker.unarmed_weapon();
-
-    switch( weapon.material )
-    {
-      case Item::WOOD: materialDensity = 10; break;
-      case Item::HAIR: materialDensity = 2;  break;
-      case Item::SKIN: materialDensity = 5;  break;
-      default: materialDensity = 1;
-    }
-
-    switch( weapon.type )
-    {
-      case Item::ROD:  typePower = 5; break;
-      case Item::WIG:  typePower = 1; break;
-      case Item::HAND: typePower = 3; break;
-      default: typePower = 1;
-    }
-
-    typePower += attacker.strength;
-
-    int attackStrength = materialDensity * typePower;
+    std::string weapon = attacker.unarmed_weapon();
+    int attackStrength = mass( weapon );
 
     defender.hp -= attackStrength;
+
+    if( attackStrength > durrability(weapon) and catalogue[weapon].shape != "hand" )
+    {
+        // TODO (Needs code from "attack" branch.)
+    }
+
     if( defender.hp < 1 )
     {
         defender.hp = 0;
@@ -149,7 +139,7 @@ void move_player( Actor& player )
 
     // We need to know if we're standing on an item, but can't construct
     // the object inside the switch, so do it now.
-    Inventory::iterator itemHere = item_at( player.pos );
+    auto itemHere = item_at( player.pos );
 
     int key = getch();
     switch( key )
@@ -166,8 +156,9 @@ void move_player( Actor& player )
       case 'p': case 'g':
           if( itemHere != items.end() )
           {
-              transfer( &player.inventory, &items, itemHere );
-              log( "Got %s,", player.inventory.back().name.c_str() );
+              player.inventory.push_back( itemHere->item );
+              items.erase( itemHere );
+              log( "Got %s!", player.inventory.back().c_str() );
           }
           else
               log( "There's nothing here." );

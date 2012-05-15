@@ -45,6 +45,10 @@ enum Colors
     COL_HORSE,
     COL_WOOD,
     COL_SKIN,
+    COL_GLASS,
+    COL_IRON,
+    COL_STEEL,
+    COL_HEALTH,
     COL_HUMAN = COL_SKIN,
     COL_KOBOLT,
     COL_NORMAL,
@@ -69,7 +73,7 @@ Vec random_position()
 
 bool read_map()
 {
-    FILE* mapgen = popen( "./mapgen 100x30", "r" ); 
+    FILE* mapgen = popen( "./mapgen 10x30", "r" ); 
     if( not mapgen )
         return false;
 
@@ -199,20 +203,31 @@ void print_actor( const Actor& a )
     print( a.pos, a.image, color );
 }
 
-void print_item( const Item& i )
+void print_item( const MapItem& mi )
 {
-    if( not map.visible(i.pos) )
+    if( not map.visible(mi.pos) )
         return;
 
-    int color = COLOR_PAIR( COL_NORMAL );
-    switch( i.material )
-    {
-      case Item::WOOD: color = COLOR_PAIR(COL_WOOD);  break;
-      case Item::HAIR: color = COLOR_PAIR(COL_HORSE) | A_DIM; break;
-      case Item::SKIN: color = COLOR_PAIR(COL_SKIN);  break;
-    }
+    const Item& i = catalogue[ mi.item ];
 
-    print( i.pos, i.image, color );
+    int color = COLOR_PAIR( COL_NORMAL );
+    if( i.material == "wood" )
+        color = COLOR_PAIR( COL_WOOD );
+    else if( i.material == "horse" )
+        color = COLOR_PAIR( COL_HORSE ) | A_BOLD;
+    else if( i.material == "skin" )
+        color = COLOR_PAIR( COL_HUMAN );
+    else if( i.material == "glass" )
+        color = COLOR_PAIR( COL_GLASS );
+    else if( i.material == "health" )
+        color = COLOR_PAIR( COL_HEALTH );
+    else if( i.material == "iron" )
+        color = COLOR_PAIR( COL_IRON );
+    else if( i.material == "steel" )
+        color = COLOR_PAIR( COL_STEEL );
+
+    // Item::pos isn't used, so use MapItem::pos.
+    print( mi.pos, i.image, color );
 }
 
 void print_map()
@@ -255,10 +270,13 @@ void print_inventory()
     uint x = inventoryPos.x + 2;
     if( actors[0].inventory.size() )
     {
-        uint y = 1;
-        for( const auto& i : actors.front().inventory )
-            mvprintw( inventoryPos.y + y++, x, 
-                      "%c - %s", 'a'+y, i.name.c_str() );
+        uint y = 0;
+        for( const auto& iname : actors.front().inventory )
+        {
+            const auto& i = catalogue[ iname ];
+            mvprintw( inventoryPos.y + y++ + 1, x, 
+                      "%c %c %s", 'a'+y, i.image, i.name.c_str() );
+        }
     }
     else
     {
@@ -304,8 +322,12 @@ int main()
     init_pair( COL_FLOOR_VISIBLE, BACKGROUND, COLOR_WHITE );
     init_pair( COL_WALL,  BACKGROUND, COLOR_BLACK  );
     init_pair( COL_WALL_VISIBLE,  COLOR_CYAN, BACKGROUND  );
-    init_pair( COL_HORSE,  COLOR_YELLOW, BACKGROUND );
-    init_pair( COL_WOOD,   COLOR_YELLOW,  BACKGROUND );
+    init_pair( COL_HORSE,  COLOR_YELLOW, COLOR_BLACK );
+    init_pair( COL_WOOD,   COLOR_YELLOW, COLOR_BLACK );
+    init_pair( COL_GLASS,  COLOR_WHITE,  COLOR_BLACK );
+    init_pair( COL_IRON,   COLOR_YELLOW, COLOR_BLACK );
+    init_pair( COL_STEEL,  COLOR_WHITE,  COLOR_BLACK );
+    init_pair( COL_HEALTH, COLOR_RED,    COLOR_BLACK );
     init_pair( COL_KOBOLT, COLOR_GREEN,  BACKGROUND );
     init_pair( COL_HUMAN,  COLOR_YELLOW, BACKGROUND );
     init_pair( COL_NORMAL, COLOR_WHITE,  COLOR_BLACK );
@@ -317,6 +339,8 @@ int main()
 
     // Make cursor invisible.
     curs_set( 0 );
+
+    init_items();
 
     std::srand( std::time(0) );
 
@@ -337,8 +361,16 @@ int main()
 
     actors.push_back( Actor(random_position(), 'k') );
 
-    items.push_back( Item(random_position(), "Broom Handle", '/', Item::WOOD, Item::ROD) );
-    items.push_back( Item(random_position(), "Horse Hair",   '"', Item::HAIR, Item::WIG) );
+    auto scatter_item = [&]( const Item& i )
+    {
+        items.push_back( {random_position(), i.name} );
+    };
+    scatter_item( basic_item("wood",  "rod") );
+    scatter_item( basic_item("horse", "wig") );
+
+    scatter_item( container_item ( 
+            "glass", "bottle", basic_item("health", "potion").name
+    ) );
 
     unsigned int time = 0;
 
@@ -361,7 +393,7 @@ int main()
         {
             auto itemHere = item_at( actors[0].pos );
             if( itemHere != items.end() )
-                log( "Your foot hits a %s.", itemHere->name.c_str() );
+                log( "Your foot hits a %s.", itemHere->item.c_str() );
             print_everything();
             clear_log();
 
